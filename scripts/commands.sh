@@ -6,5 +6,10 @@ cast call --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY <contractAddress> "owner
 cast call --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY <contractAddress> "tokenURI(uint256)" 1
 cast call --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY <contractAddress> "balanceOf(address)" <eoaAddress>
 
+# Test commands
+forge test
+forge test -vvvv
+forge test --match-contract <testSuiteName>
+
 ## Etherscan verification
 
