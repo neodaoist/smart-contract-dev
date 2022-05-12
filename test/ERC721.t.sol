@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "../src/ERC721Contract.sol";
 
 contract ERC721Test is Test {
+    
     using stdStorage for StdStorage;
 
     ERC721Contract token;
