@@ -10,8 +10,12 @@ contract ERC721Test is Test {
 
     ERC721Contract token;
 
+    event Transfer(address indexed from, address indexed to, uint256 indexed id);
+    event Approval(address indexed owner, address indexed spender, uint256 indexed id);
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);    
+
     function setUp() public {
-      token = new ERC721Contract("Token", "TKN");
+        token = new ERC721Contract("Token", "TKN");
     }
 
     ////////////////////////////////////////////////
@@ -19,10 +23,10 @@ contract ERC721Test is Test {
     ////////////////////////////////////////////////
 
     function testMint() public {
-      token.mint(address(0xBABE), 1337);
+        token.mint(address(0xBABE), 1337);
 
-      assertEq(token.balanceOf(address(0xBABE)), 1);
-      assertEq(token.ownerOf(1337), address(0xBABE));
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+        assertEq(token.ownerOf(1337), address(0xBABE));
     }
 
     //
@@ -38,13 +42,13 @@ contract ERC721Test is Test {
     ////////////////////////////////////////////////
 
     function testBurn() public {
-      token.mint(address(0xBABE), 1337);
-      token.burn(1337);
+        token.mint(address(0xBABE), 1337);
+        token.burn(1337);
 
-      assertEq(token.balanceOf(address(0xBABE)), 0);
+        assertEq(token.balanceOf(address(0xBABE)), 0);
 
-      vm.expectRevert("NOT_MINTED");
-      token.ownerOf(1337);
+        vm.expectRevert("NOT_MINTED");
+        token.ownerOf(1337);
     }
 
     //
@@ -54,75 +58,202 @@ contract ERC721Test is Test {
     ////////////////////////////////////////////////
 
     function testApprove() public {
-      token.mint(address(this), 1337);
+        token.mint(address(this), 1337);
 
-      token.approve(address(0xBABE), 1337);
+        vm.expectEmit(true, true, true, true);
+        emit Approval(address(this), address(0xBABE), 1337);
 
-      assertEq(token.getApproved(1337), address(0xBABE));
+        token.approve(address(0xBABE), 1337);
+
+        assertEq(token.getApproved(1337), address(0xBABE));
     }
 
     function testApproveBurn() public {
-      token.mint(address(this), 1337);
+        token.mint(address(this), 1337);
 
-      token.approve(address(0xBABE), 1337);
+        token.approve(address(0xBABE), 1337);
 
-      token.burn(1337);
+        token.burn(1337);
 
-      assertEq(token.balanceOf(address(this)), 0);
-      assertEq(token.getApproved(1337), address(0));
+        assertEq(token.balanceOf(address(this)), 0);
+        assertEq(token.getApproved(1337), address(0));
 
-      vm.expectRevert("NOT_MINTED");
-      token.ownerOf(1337);
+        vm.expectRevert("NOT_MINTED");
+        token.ownerOf(1337);
     }
 
     function testApproveAll() public {
-      token.setApprovalForAll(address(0xBABE), true);
+        vm.expectEmit(true, true, true, true);
+        emit ApprovalForAll(address(this), address(0xBABE), true);
 
-      assertTrue(token.isApprovedForAll(address(this), address(0xBABE)));
+        token.setApprovalForAll(address(0xBABE), true);
+
+        assertTrue(token.isApprovedForAll(address(this), address(0xBABE)));
     }
+
+    // TODO sad paths
 
     ////////////////////////////////////////////////
     ////////////////    Transfer    ////////////////
     ////////////////////////////////////////////////
 
-    // 
+    function testTransferFrom() public {
+        address from = address(0xABCD);
+
+        token.mint(from, 1337);
+
+        vm.prank(from);
+        token.approve(address(this), 1337);
+
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(from, address(0xBABE), 1337);
+
+        token.transferFrom(from, address(0xBABE), 1337);
+
+        assertEq(token.getApproved(1337), address(0));
+        assertEq(token.ownerOf(1337), address(0xBABE));
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+        assertEq(token.balanceOf(from), 0);
+    }
+
+    function testTransferFromSelf() public {
+        token.mint(address(this), 1337);
+
+        token.transferFrom(address(this), address(0xBABE), 1337);
+
+        assertEq(token.getApproved(1337), address(0));
+        assertEq(token.ownerOf(1337), address(0xBABE));
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+        assertEq(token.balanceOf(address(this)), 0);
+    }
+
+    function testTransferFromApproveAll() public {
+        address from = address(0xABCD);
+
+        token.mint(from, 1337);
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        token.transferFrom(from, address(0xBABE), 1337);
+
+        assertEq(token.getApproved(1337), address(0));
+        assertEq(token.ownerOf(1337), address(0xBABE));
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+        assertEq(token.balanceOf(from), 0);
+    }
+
+    // TODO sad paths
 
     ////////////////////////////////////////////////
     ////////////////    Safe Transfer    ///////////
     ////////////////////////////////////////////////
 
-    //
+    function testSafeTransferFromToEOA() public {
+        address from = address(0xABCD);
+
+        token.mint(from, 1337);
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(from, address(0xBABE), 1337);
+
+        token.safeTransferFrom(from, address(0xBABE), 1337);
+
+        assertEq(token.getApproved(1337), address(0));
+        assertEq(token.ownerOf(1337), address(0xBABE));
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+        assertEq(token.balanceOf(from), 0);
+    }
+
+    function testSafeTransferFromToERC721Recipient() public {
+        address from = address(0xABCD);
+        ERC721Recipient recipient = new ERC721Recipient();
+
+        token.mint(from, 1337);
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        token.safeTransferFrom(from, address(recipient), 1337);
+
+        assertEq(token.getApproved(1337), address(0));
+        assertEq(token.ownerOf(1337), address(recipient));
+        assertEq(token.balanceOf(address(recipient)), 1);
+        assertEq(token.balanceOf(from), 0);
+
+        assertEq(recipient.operator(), address(this));
+        assertEq(recipient.from(), from);
+        assertEq(recipient.id(), 1337);
+        assertEq(recipient.data(), "");
+    }
+
+    function testSafeTransferFromToERC721RecipientWithData() public {
+        address from = address(0xABCD);
+        ERC721Recipient recipient = new ERC721Recipient();
+
+        token.mint(from, 1337);
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        token.safeTransferFrom(from, address(recipient), 1337, "testing 456");
+
+        assertEq(token.getApproved(1337), address(0));
+        assertEq(token.ownerOf(1337), address(recipient));
+        assertEq(token.balanceOf(address(recipient)), 1);
+        assertEq(token.balanceOf(from), 0);
+
+        assertEq(recipient.operator(), address(this));
+        assertEq(recipient.from(), from);
+        assertEq(recipient.id(), 1337);
+        assertEq(recipient.data(), "testing 456");
+    }
+
+    function testFailSafeTransferFromToNonERC721Recipient() public {
+        token.mint(address(this), 1337);
+
+        //vm.expectRevert(bytes("UNSAFE_RECIPIENT")); // TODO figure out more precise assertion for require
+
+        token.safeTransferFrom(address(this), address(new NonERC721Recipient()), 1337);
+    }
+
+    // TODO remaining sad paths
 
     ////////////////////////////////////////////////
     ////////////////    Metadata    ////////////////
     ////////////////////////////////////////////////
 
     function testInvariantMetadata() public {
-      assertEq(token.name(), "Token");
-      assertEq(token.symbol(), "TKN");
+        assertEq(token.name(), "Token");
+        assertEq(token.symbol(), "TKN");
     }
 
     //
     
-  }
+}
 
-  contract ERC721Recipient is ERC721TokenReceiver {
+contract ERC721Recipient is ERC721TokenReceiver {
     address public operator;
     address public from;
     uint256 public id;
     bytes public data;
 
     function onERC721Received(
-      address _operator,
-      address _from,
-      uint256 _id,
-      bytes calldata _data
+        address _operator,
+        address _from,
+        uint256 _id,
+        bytes calldata _data
     ) public virtual override returns (bytes4) {
-      operator = _operator;
-      from = _from;
-      id = _id;
-      data = _data;
+        operator = _operator;
+        from = _from;
+        id = _id;
+        data = _data;
 
-      return ERC721TokenReceiver.onERC721Received.selector;
+        return ERC721TokenReceiver.onERC721Received.selector;
     }
 }
+
+contract NonERC721Recipient {}
