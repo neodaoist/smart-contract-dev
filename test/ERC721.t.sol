@@ -143,7 +143,31 @@ contract ERC721Test is Test {
         assertEq(token.balanceOf(from), 0);
     }
 
-    // TODO sad paths
+    function testTransferFromWithWrongFrom() public {
+        token.mint(address(this), 1337);
+
+        vm.expectRevert("WRONG_FROM");
+
+        token.transferFrom(address(0xBABE), address(0xABCD), 1337);
+    }
+
+    function testTransferFromWithInvalidAddress() public {
+        token.mint(address(this), 1337);
+
+        vm.expectRevert("INVALID_RECIPIENT");
+
+        token.transferFrom(address(this), address(0), 1337);
+    }
+
+    function testTransferFromWithUnapprovedSpender() public {
+        token.mint(address(0xBABE), 1337);
+
+        vm.expectRevert("NOT_AUTHORIZED");
+
+        token.transferFrom(address(0xBABE), address(0xABCD), 1337);
+    }
+
+    // TODO remaining sad paths
 
     ////////////////////////////////////////////////
     ////////////////    Safe Transfer    ///////////
@@ -212,12 +236,14 @@ contract ERC721Test is Test {
         assertEq(recipient.data(), "testing 456");
     }
 
-    function testFailSafeTransferFromToNonERC721Recipient() public {
+    function testSafeTransferFromToNonERC721Recipient() public {
         token.mint(address(this), 1337);
 
-        //vm.expectRevert(bytes("UNSAFE_RECIPIENT")); // TODO figure out more precise assertion for require
+        address nonRecipient = address(new NonERC721Recipient());
 
-        token.safeTransferFrom(address(this), address(new NonERC721Recipient()), 1337);
+        vm.expectRevert();
+
+        token.safeTransferFrom(address(this), nonRecipient, 1337);
     }
 
     // TODO remaining sad paths
