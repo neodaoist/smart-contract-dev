@@ -48,6 +48,17 @@ contract ERC721Test is Test {
         token.mint(address(0xBABE), 1337);
     }
 
+    function testMintFuzzy(address to, uint256 id) public {
+        if (to == address(0)) to = address(0xBABE);
+
+        token.mint(to, id);
+
+        assertEq(token.balanceOf(to), 1);
+        assertEq(token.ownerOf(id), to);
+    }
+
+    //
+
     ////////////////////////////////////////////////
     ////////////////    Burn    ////////////////////
     ////////////////////////////////////////////////
@@ -76,6 +87,18 @@ contract ERC721Test is Test {
         vm.expectRevert("NOT_MINTED");
 
         token.burn(1337);
+    }
+
+    function testBurnFuzzy(address to, uint256 id) public {
+        if (to == address(0)) to = address(0xBABE);
+
+        token.mint(to, id);
+        token.burn(id);
+
+        assertEq(token.balanceOf(to), 0);
+
+        vm.expectRevert("NOT_MINTED");
+        token.ownerOf(id);
     }
 
     //
@@ -133,6 +156,92 @@ contract ERC721Test is Test {
     }
 
     // 
+
+    ////////////////////////////////////////////////
+    ////////////////    Balance Of    //////////////
+    ////////////////////////////////////////////////
+
+    function testBalanceOf() public {
+        token.mint(address(0xBABE), 1337);
+
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+    }
+
+    function testBalanceOfWithTwoMints() public {
+        token.mint(address(0xBABE), 1);
+        token.mint(address(0xBABE), 1337);
+
+        assertEq(token.balanceOf(address(0xBABE)), 2);
+    }
+
+    function testBalanceOfWhenOwningNone() public {
+        assertEq(token.balanceOf(address(0xBABE)), 0);
+    }
+
+    function testBalanceOfAfterBurn() public {
+        token.mint(address(0xBABE), 1);
+        token.mint(address(0xBABE), 1337);
+
+        vm.prank(address(0xBABE));
+        token.burn(1);
+
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+    }
+
+    function testBalanceOfAfterSendingTransfer() public {
+        token.mint(address(0xBABE), 1);
+        token.mint(address(0xBABE), 1337);
+
+        vm.prank(address(0xBABE));
+        token.transferFrom(address(0xBABE), address(this), 1);
+
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+    }
+
+    function testBalanceOfAfterReceivingTransfer() public {
+        token.mint(address(this), 1337);
+
+        token.transferFrom(address(this), address(0xBABE), 1337);
+
+        assertEq(token.balanceOf(address(0xBABE)), 1);
+        assertEq(token.balanceOf(address(this)), 0);
+    }
+
+    function testBalanceOfZeroAddressShouldFail() public {
+        vm.expectRevert("ZERO_ADDRESS");
+
+        token.balanceOf(address(0));
+    }
+    
+    // 
+
+    ////////////////////////////////////////////////
+    ////////////////    Owner Of    ////////////////
+    ////////////////////////////////////////////////
+
+    function testOwnerOf() public {
+        token.mint(address(0xBABE), 1337);
+
+        assertEq(token.ownerOf(1337), address(0xBABE));
+    }
+
+    function testOwnerOfWhenNotMintedShouldFail() public {
+        vm.expectRevert("NOT_MINTED");
+
+        token.ownerOf(1337);
+    }
+
+    function testOwnerOfAfterTransfer() public {
+        token.mint(address(this), 1337);
+
+        assertEq(token.ownerOf(1337), address(this));
+
+        token.transferFrom(address(this), address(0xBABE), 1337);
+
+        assertEq(token.ownerOf(1337), address(0xBABE));
+    }
+
+    //
 
     ////////////////////////////////////////////////
     ////////////////    Transfer    ////////////////
