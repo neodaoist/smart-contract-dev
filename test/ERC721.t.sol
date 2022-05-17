@@ -322,15 +322,35 @@ contract ERC721Test is Test {
         assertEq(recipient.data(), "testing 456");
     }
 
-    function testSafeTransferFromToNonERC721Recipient() public {
+    function testSafeTransferFromToNonERC721RecipientShouldFail() public {
         token.mint(address(this), 1337);
 
-        address nonRecipient = address(new NonERC721Recipient());
+        address recipientAddr = address(new NonERC721Recipient());
 
         vm.expectRevert();
 
-        token.safeTransferFrom(address(this), nonRecipient, 1337);
+        token.safeTransferFrom(address(this), recipientAddr, 1337);
     }
+
+    function testSafeTransferFromToNonERC721RecipientWithDataShouldFail() public {
+        token.mint(address(this), 1337);
+
+        address recipientAddr = address(new NonERC721Recipient());
+
+        vm.expectRevert();
+
+        token.safeTransferFrom(address(this), recipientAddr, 1337, "testing 456");
+    }
+
+    // function testSafeTransferFromToRevertingERC721RecipientShouldFail() public {
+    //     token.mint(address(this), 1337);
+
+    //     vm.expectRevert(bytes(string(abi.encodePacked(ERC721TokenReceiver.onERC721Received.selector))));
+
+    //     token.safeTransferFrom(address(this), address(new RevertingERC721Recipient()), 1337);
+    // }
+
+    
 
     // TODO remaining sad paths
 
@@ -364,3 +384,25 @@ contract ERC721Recipient is ERC721TokenReceiver {
 }
 
 contract NonERC721Recipient {}
+
+contract RevertingERC721Recipient is ERC721TokenReceiver {
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public virtual override returns (bytes4) {
+        revert(string(abi.encodePacked(ERC721TokenReceiver.onERC721Received.selector)));
+    }
+}
+
+contract WrongReturnDataERC721Recipient is ERC721TokenReceiver {
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public virtual override returns (bytes4) {
+        return 0xDEADCAFE;
+    }
+}
