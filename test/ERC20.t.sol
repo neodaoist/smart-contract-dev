@@ -9,9 +9,10 @@ contract ERC20Test is Test {
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Approval(address indexed owner, address indexed spender, uint256 amount);
     
-    using stdStorage for StdStorage;
-
     ERC20Contract token;
+
+    bytes32 constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     function setUp() public {
       token = new ERC20Contract("Token", "TKN", 18);
@@ -81,6 +82,58 @@ contract ERC20Test is Test {
 
         assertEq(token.balanceOf(from), 0);
         assertEq(token.balanceOf(address(0xBABE)), 1e18);
+    }
+
+    function testAllowanceWhenPartiallySpent() public {
+        address from = address(0xABCD);
+
+        token.mint(from, 1e18);
+
+        vm.prank(from);
+        token.approve(address(this), 1e18);
+
+        token.transferFrom(from, address(0xBABE), 0.9e18);
+
+        assertEq(token.allowance(from, address(this)), 0.1e18);
+    }
+
+    function testInfiniteApproveTransferFrom() public {
+        address from = address(0xABCD);
+
+        token.mint(from, 1e18);
+
+        vm.prank(from);
+        token.approve(address(this), type(uint256).max);
+
+        assertTrue(token.transferFrom(from, address(0xBABE), 1e18));
+        assertEq(token.totalSupply(), 1e18);
+
+        assertEq(token.allowance(from, address(this)), type(uint256).max);
+
+        assertEq(token.balanceOf(from), 0);
+        assertEq(token.balanceOf(address(0xBABE)), 1e18);
+    }
+
+    // https://eips.ethereum.org/EIPS/eip-2612
+    function testPermit() public {
+        uint256 privateKey = 0xBABE;
+        address owner = vm.addr(privateKey);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    token.DOMAIN_SEPARATOR(),
+                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xABCD), 1e18, 0, block.timestamp))
+                )
+            )
+        );
+
+        token.permit(owner, address(0xABCD), 1e18, block.timestamp, v, r, s);
+
+        assertEq(token.allowance(owner, address(0xABCD)), 1e18);
+        assertEq(token.nonces(owner), 1);
     }
 
 }
