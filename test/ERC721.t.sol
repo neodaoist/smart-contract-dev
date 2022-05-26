@@ -23,6 +23,8 @@ contract ERC721Test is Test {
         assertEq(token.symbol(), "TKN");
     }
 
+    // TODO add remaining fuzz tests
+
     ////////////////////////////////////////////////
     ////////////////    Mint    ////////////////////
     ////////////////////////////////////////////////
@@ -57,7 +59,7 @@ contract ERC721Test is Test {
         assertEq(token.ownerOf(id), to);
     }
 
-    //
+    // TODO add remaining fuzz tests
 
     ////////////////////////////////////////////////
     ////////////////    Burn    ////////////////////
@@ -101,7 +103,7 @@ contract ERC721Test is Test {
         token.ownerOf(id);
     }
 
-    //
+    // TODO add remaining fuzz tests
 
     ////////////////////////////////////////////////
     ////////////////    Approve    /////////////////
@@ -155,7 +157,7 @@ contract ERC721Test is Test {
         token.approve(address(0xBABE), 1337);
     }
 
-    // 
+    // TODO add remaining fuzz tests
 
     ////////////////////////////////////////////////
     ////////////////    Balance Of    //////////////
@@ -188,7 +190,7 @@ contract ERC721Test is Test {
         assertEq(token.balanceOf(address(0xBABE)), 1);
     }
 
-    function testBalanceOfAfterSendingTransfer() public {
+    function testBalanceOfAfterTransferring() public {
         token.mint(address(0xBABE), 1);
         token.mint(address(0xBABE), 1337);
 
@@ -213,7 +215,7 @@ contract ERC721Test is Test {
         token.balanceOf(address(0));
     }
     
-    // 
+    // TODO add remaining fuzz tests
 
     ////////////////////////////////////////////////
     ////////////////    Owner Of    ////////////////
@@ -225,7 +227,7 @@ contract ERC721Test is Test {
         assertEq(token.ownerOf(1337), address(0xBABE));
     }
 
-    function testOwnerOfWhenNotMintedShouldFail() public {
+    function testOwnerOfUnmintedShouldFail() public {
         vm.expectRevert("NOT_MINTED");
 
         token.ownerOf(1337);
@@ -241,7 +243,7 @@ contract ERC721Test is Test {
         assertEq(token.ownerOf(1337), address(0xBABE));
     }
 
-    //
+    // TODO add remaining fuzz tests
 
     ////////////////////////////////////////////////
     ////////////////    Transfer    ////////////////
@@ -315,7 +317,7 @@ contract ERC721Test is Test {
         token.transferFrom(address(this), address(0), 1337);
     }
 
-    function testTransferFromWithNotOwnerOrUnapprovedSpender() public {
+    function testTransferFromWithNotOwnerOrUnapprovedSpenderShouldFail() public {
         token.mint(address(0xBABE), 1337);
 
         vm.expectRevert("NOT_AUTHORIZED");
@@ -323,7 +325,7 @@ contract ERC721Test is Test {
         token.transferFrom(address(0xBABE), address(0xABCD), 1337);
     }
 
-    //
+    // TODO add remaining fuzz tests
 
     ////////////////////////////////////////////////
     ////////////////    Safe Transfer    ///////////
@@ -442,7 +444,7 @@ contract ERC721Test is Test {
         token.safeTransferFrom(address(this), to, 1337, "testing 456");
     }
 
-    // TODO remaining sad paths
+    // TODO add remaining fuzz tests
 
     ////////////////////////////////////////////////
     ////////////////    Safe Mint    ///////////////
@@ -531,11 +533,19 @@ contract ERC721Test is Test {
         token.safeMint(to, 1337, "testing 456");
     }
 
+    // TODO add remaining fuzz tests
+
     ////////////////////////////////////////////////
     ////////////////    Metadata    ////////////////
     ////////////////////////////////////////////////
 
-    //
+    // TODO add ERC721Metadata tests
+
+    ////////////////////////////////////////////////
+    ////////////////    Metadata    ////////////////
+    ////////////////////////////////////////////////
+
+    // TODO add ERC721Enumerable
     
 }
 
