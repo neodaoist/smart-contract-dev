@@ -25,7 +25,7 @@ contract ERC20Test is Test {
     }
 
     ////////////////////////////////////////////////
-    ////////////////    XYZ    /////////////////////
+    ////////////////    Mint    ////////////////////
     ////////////////////////////////////////////////
 
     function testMint() public {
@@ -35,6 +35,10 @@ contract ERC20Test is Test {
         assertEq(token.balanceOf(address(0xBABE)), 1e18);
     }
 
+    ////////////////////////////////////////////////
+    ////////////////    Burn    ////////////////////
+    ////////////////////////////////////////////////
+
     function testBurn() public {
         token.mint(address(0xBABE), 1e18);
         token.burn(address(0xBABE), 0.9e18);
@@ -43,6 +47,10 @@ contract ERC20Test is Test {
         assertEq(token.balanceOf(address(0xBABE)), 0.1e18);
     }
 
+    ////////////////////////////////////////////////
+    ////////////////    Approve    /////////////////
+    ////////////////////////////////////////////////
+
     function testApprove() public {
         vm.expectEmit(true, true, true, true);
         emit Approval(address(this), address(0xBABE), 1e18);
@@ -50,6 +58,10 @@ contract ERC20Test is Test {
         assertTrue(token.approve(address(0xBABE), 1e18));
         assertEq(token.allowance(address(this), address(0xBABE)), 1e18);
     }
+
+    ////////////////////////////////////////////////
+    ////////////////    Transfer    ////////////////
+    ////////////////////////////////////////////////
 
     function testTransfer() public {
         token.mint(address(this), 1e18);
@@ -84,6 +96,38 @@ contract ERC20Test is Test {
         assertEq(token.balanceOf(address(0xBABE)), 1e18);
     }
 
+    function testFailTransferWhenInsufficientBalance() public {
+        token.mint(address(this), 0.9e18);
+
+        //vm.expectRevert("Arithmetic over/underflow"); // TODO research if this is possible
+
+        token.transfer(address(0xBABE), 1e18);
+    }
+
+    function testFailTransferFromWhenInsufficientAllowance() public {
+        address from = address(0xABCD);
+        
+        token.mint(from, 1e18);
+
+        vm.prank(from);
+        token.approve(address(this), 0.9e18);
+
+        //vm.expectRevert("Arithmetic over/underflow"); // TODO research if this is possible
+
+        token.transferFrom(from, address(0xBABE), 1e18);
+    }
+
+    function testFailTransferFromInsufficientBalance() public {
+        address from = address(0xABCD);
+
+        token.mint(from, 0.9e18);
+
+        vm.prank(from);
+        token.approve(address(this), 1e18);
+
+        token.transferFrom(from, address(0xBABE), 1e18);
+    }
+
     function testAllowanceWhenPartiallySpent() public {
         address from = address(0xABCD);
 
@@ -114,7 +158,12 @@ contract ERC20Test is Test {
         assertEq(token.balanceOf(address(0xBABE)), 1e18);
     }
 
+    ////////////////////////////////////////////////
+    ////////////////    Permit    //////////////////
+    ////////////////////////////////////////////////
+
     // https://eips.ethereum.org/EIPS/eip-2612
+
     function testPermit() public {
         uint256 privateKey = 0xBABE;
         address owner = vm.addr(privateKey);
@@ -135,5 +184,91 @@ contract ERC20Test is Test {
         assertEq(token.allowance(owner, address(0xABCD)), 1e18);
         assertEq(token.nonces(owner), 1);
     }
+
+    function testPermitWhenBadNonceShouldFail() public {
+        uint256 privateKey = 0xBABE;
+        address owner = vm.addr(privateKey);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    token.DOMAIN_SEPARATOR(),
+                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xABCD), 1e18, 1, block.timestamp))
+                )
+            )
+        );
+
+        vm.expectRevert("INVALID_SIGNER");
+
+        token.permit(owner, address(0xABCD), 1e18, block.timestamp, v, r, s);
+    }
+
+    function testPermitWhenBadDeadlineShouldFail() public {
+        uint256 privateKey = 0xBABE;
+        address owner = vm.addr(privateKey);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    token.DOMAIN_SEPARATOR(),
+                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xABCD), 1e18, 0, block.timestamp))
+                )
+            )
+        );
+
+        vm.expectRevert("INVALID_SIGNER");
+
+        token.permit(owner, address(0xABCD), 1e18, block.timestamp + 1, v, r, s);
+    }
+
+    function testPermitWhenPastDeadlineShouldFail() public {
+        uint256 privateKey = 0xBABE;
+        address owner = vm.addr(privateKey);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    token.DOMAIN_SEPARATOR(),
+                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xABCD), 1e18, 0, block.timestamp - 1))
+                )
+            )
+        );
+
+        vm.expectRevert("PERMIT_DEADLINE_EXPIRED");
+
+        token.permit(owner, address(0xABCD), 1e18, block.timestamp - 1, v, r, s);
+    }
+
+    function testDoublePermitShouldFail() public {
+        uint256 privateKey = 0xBABE;
+        address owner = vm.addr(privateKey);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    token.DOMAIN_SEPARATOR(),
+                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xABCD), 1e18, 0, block.timestamp))
+                )
+            )
+        );
+
+        token.permit(owner, address(0xABCD), 1e18, block.timestamp, v, r, s);
+
+        vm.expectRevert("INVALID_SIGNER");
+
+        token.permit(owner, address(0xABCD), 1e18, block.timestamp, v, r, s);
+    }
+
+    // TODO add fuzz tests
+
+    // TODO add invariant test
 
 }
