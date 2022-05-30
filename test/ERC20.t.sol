@@ -96,15 +96,15 @@ contract ERC20Test is Test {
         assertEq(token.balanceOf(address(0xBABE)), 1e18);
     }
 
-    function testFailTransferWhenInsufficientBalance() public {
+    function testTransferWhenInsufficientBalanceShouldFail() public {
         token.mint(address(this), 0.9e18);
 
-        //vm.expectRevert("Arithmetic over/underflow"); // TODO research if this is possible
+        vm.expectRevert(stdError.arithmeticError);
 
         token.transfer(address(0xBABE), 1e18);
     }
 
-    function testFailTransferFromWhenInsufficientAllowance() public {
+    function testTransferFromWhenInsufficientAllowanceShouldFail() public {
         address from = address(0xABCD);
         
         token.mint(from, 1e18);
@@ -112,7 +112,7 @@ contract ERC20Test is Test {
         vm.prank(from);
         token.approve(address(this), 0.9e18);
 
-        //vm.expectRevert("Arithmetic over/underflow"); // TODO research if this is possible
+        vm.expectRevert(stdError.arithmeticError);
 
         token.transferFrom(from, address(0xBABE), 1e18);
     }

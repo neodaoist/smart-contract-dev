@@ -397,7 +397,7 @@ contract ERC1155Test is Test {
         assertEq(token.balanceOf(address(to), 1341), 200);
     }
 
-    function testFailSafeTransferFromWhenInsufficientBalance() public {
+    function testSafeTransferFromWhenInsufficientBalanceShouldFail() public {
         address from = address(0xABCD);
 
         token.mint(from, 1337, 60, "");
@@ -405,61 +405,63 @@ contract ERC1155Test is Test {
         vm.prank(from);
         token.setApprovalForAll(address(this), true);
 
-        //vm.expectRevert("Arithmetic over/underflow"); // TODO research if this is possible
+        vm.expectRevert(stdError.arithmeticError);
 
         token.safeTransferFrom(from, address(0xBABE), 1337, 100, "");
     }
 
-    function testFailSafeTransferFromSelfWhenInsufficientBalance() public {
-        token.mint(address(this), 1337, 70, "");
+    function testSafeTransferFromSelfWhenInsufficientBalanceShouldFail() public {
+        token.mint(address(0xBABE), 1337, 70, "");
 
-        //vm.expectRevert("Arithmetic over/underflow"); // TODO research if this is possible
+        vm.expectRevert(stdError.arithmeticError);
 
-        token.safeTransferFrom(address(this), address(0xBABE), 1337, 100, "");
+        vm.prank(address(0xBABE));
+        token.safeTransferFrom(address(0xBABE), address(0xABCD), 1337, 100, "");
     }
 
-    // TODO fix these sad path tests
+    function testSafeTransferFromToZeroAddressShouldFail() public {
+        token.mint(address(0xBABE), 1337, 100, "");
 
-    // function testSafeTransferFromToZeroAddressShouldFail() public {
-    //     token.mint(address(this), 1337, 100, "");
+        vm.expectRevert("UNSAFE_RECIPIENT");
 
-    //     vm.expectEmit(true, true, true, true);
-    //     emit TransferSingle(address(this), address(this), address(0), 1337, 100);
+        vm.prank(address(0xBABE));
+        token.safeTransferFrom(address(0xBABE), address(0), 1337, 60, "");
+    }
 
-    //     vm.expectRevert();
+    function testSafeTransferFromToNonERC1155RecipientShouldFail() public {
+        address to = address(new NonERC1155Recipient());
 
-    //     token.safeTransferFrom(address(this), address(0), 1337, 60, "");
-    // }
+        token.mint(address(0xBABE), 1337, 100, "");
 
-    // function testSafeTransferFromToNonERC1155RecipientShouldFail() public {
-    //     address to = address(new NonERC1155Recipient());
+        vm.expectRevert();
         
-    //     token.mint(address(this), 1337, 100, "");
+        vm.prank(address(0xBABE));
+        token.safeTransferFrom(address(0xBABE), to, 1337, 60, "");
+    }
 
-    //     vm.expectRevert();
-
-    //     token.safeTransferFrom(address(this), to, 1337, 60, "");
-    // }
-
-    // function testSafeTransferFromToRevertingERC1155RecipientShouldFail() public {
-    //     address to = address(new RevertingERC1155Recipient());
+    function testSafeTransferFromToRevertingERC1155RecipientShouldFail() public {
+        address to = address(new RevertingERC1155Recipient());
         
-    //     token.mint(address(this), 1337, 100, "");
+        token.mint(address(0xBABE), 1337, 100, "");
 
-    //     vm.expectRevert(bytes(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155Received.selector))));
+        vm.expectRevert(bytes(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155Received.selector))));
 
-    //     token.safeTransferFrom(address(this), to, 1337, 60, "");
-    // }
+        vm.prank(address(0xBABE));
+        token.safeTransferFrom(address(0xBABE), to, 1337, 60, "");
+    }
 
-    // function testSafeTransferFromToWrongDataERC1155RecipientShouldFail() public {
-    //     address to = address(new WrongReturnDataERC1155Recipient());
+    function testSafeTransferFromToWrongDataERC1155RecipientShouldFail() public {
+        address to = address(new WrongReturnDataERC1155Recipient());
         
-    //     token.mint(address(this), 1337, 100, "");
+        token.mint(address(0xBABE), 1337, 100, "");
 
-    //     vm.expectRevert("UNSAFE_RECIPIENT");
+        vm.expectRevert("NOT_AUTHORIZED");
 
-    //     token.safeTransferFrom(address(this), to, 1337, 60, "");
-    // }
+        vm.prank(address(0xBABE));
+        token.safeTransferFrom(address(this), to, 1337, 60, "");
+    }
+
+    
 
     ////////////////////////////////////////////////
     ////////////////    Utility    /////////////////
