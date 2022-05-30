@@ -461,13 +461,379 @@ contract ERC1155Test is Test {
         token.safeTransferFrom(address(this), to, 1337, 60, "");
     }
 
+    function testSafeBatchTransferWhenInsufficientBalanceShouldFail() public {
+        address from = address(0xABCD);
+        address to = address(0xBABE);
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory mintAmounts = new uint256[](5);
+        mintAmounts[0] = 60;
+        mintAmounts[1] = 120;
+        mintAmounts[2] = 180;
+        mintAmounts[3] = 240;
+        mintAmounts[4] = 300;
+
+        uint256[] memory transferAmounts = new uint256[](5);
+        transferAmounts[0] = 100;
+        transferAmounts[1] = 200;
+        transferAmounts[2] = 300;
+        transferAmounts[3] = 400;
+        transferAmounts[4] = 500;
+
+        token.batchMint(from, ids, mintAmounts, "");
+
+        // Should we exercise this both as self and as approved?
+        // Or doesn't matter bc we already exercised both paths
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        vm.expectRevert(stdError.arithmeticError);
+
+        token.safeBatchTransferFrom(from, to, ids, transferAmounts, "");
+    }
+
+    // TODO consider PR to foundry to consolidate to 1 array of amounts when unneeded
+
+    function testSafeBatchTransferFromToZeroAddressShouldFail() public {
+        address from = address(0xABCD);
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+        amounts[4] = 500;
+
+        token.batchMint(from, ids, amounts, "");
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        vm.expectRevert("UNSAFE_RECIPIENT");
+
+        token.safeBatchTransferFrom(from, address(0), ids, amounts, "");
+    }
+
+    function testSafeBatchTransferFromToNonERC1155RecipientShouldFail() public {
+        address from = address(0xABCD);
+        address to = address(new NonERC1155Recipient());
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+        amounts[4] = 500;
+
+        token.batchMint(from, ids, amounts, "");
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        vm.expectRevert();
+
+        token.safeBatchTransferFrom(from, to, ids, amounts, "");
+    }
+
+    function testSafeBatchTransferFromToRevertingERC1155RecipientShouldFail() public {
+        address from = address(0xABCD);
+        address to = address(new RevertingERC1155Recipient());
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+        amounts[4] = 500;
+
+        token.batchMint(from, ids, amounts, "");
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);   
+
+        vm.expectRevert(bytes(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155BatchReceived.selector))));
+
+        token.safeBatchTransferFrom(from, to, ids, amounts, "");
+    }
+
+    function testSafeBatchTransferFromToWrongReturnDataERC1155RecipientShouldFail() public {
+        address from = address(0xABCD);
+        address to = address(new WrongReturnDataERC1155Recipient());
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+        amounts[4] = 500;
+
+        token.batchMint(from, ids, amounts, "");
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        vm.expectRevert("UNSAFE_RECIPIENT");
+
+        token.safeBatchTransferFrom(from, to, ids, amounts, "");
+    }
+
+    function testSafeBatchTransferFromWhenArrayLengthMismatchShouldFail() public {
+        address from = address(0xABCD);
+        address to = address(0xBABE);
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory mintAmounts = new uint256[](5);
+        mintAmounts[0] = 100;
+        mintAmounts[1] = 200;
+        mintAmounts[2] = 300;
+        mintAmounts[3] = 400;
+        mintAmounts[4] = 500;
+
+        uint256[] memory transferAmounts = new uint256[](4);
+        transferAmounts[0] = 100;
+        transferAmounts[1] = 200;
+        transferAmounts[2] = 300;
+        transferAmounts[3] = 400;
+
+        token.batchMint(from, ids, mintAmounts, "");
+
+        vm.prank(from);
+        token.setApprovalForAll(address(this), true);
+
+        vm.expectRevert("LENGTH_MISMATCH");
+
+        token.safeBatchTransferFrom(from, to, ids, transferAmounts, "");
+    }
+
+    function testBatchMintToZeroAddressShouldFail() public {
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+        amounts[4] = 500;
+
+        vm.expectRevert("UNSAFE_RECIPIENT");
+
+        token.batchMint(address(0), ids, amounts, "");
+    }
+
+    function testBatchMintToNonERC155RecipientShouldFail() public {
+        address to = address(new NonERC1155Recipient());
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+        amounts[4] = 500;
+
+        vm.expectRevert();
+
+        token.batchMint(to, ids, amounts, "");
+    }
+
+    function testBatchMintToRevertingERC1155RecipientShouldFail() public {
+        address to = address(new RevertingERC1155Recipient());
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+        amounts[4] = 500;
+
+        vm.expectRevert(bytes(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155BatchReceived.selector))));
+
+        token.batchMint(to, ids, amounts, "");
+    }
+
+    function testBatchMintToWrongReturnDataERC1155RecipientShouldFail() public {
+        address to = address(new WrongReturnDataERC1155Recipient());
+
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+        amounts[4] = 500;
+
+        vm.expectRevert("UNSAFE_RECIPIENT");
+
+        token.batchMint(to, ids, amounts, "");
+    }
+
+    function testBatchMintWhenArrayLengthMismatchShouldFail() public {
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory amounts = new uint256[](4);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        amounts[2] = 300;
+        amounts[3] = 400;
+
+        vm.expectRevert("LENGTH_MISMATCH");
+
+        token.batchMint(address(0xBABE), ids, amounts, "");
+    }
+
+    function testBatchBurnWhenInsufficientBalanceShouldFail() public {
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory mintAmounts = new uint256[](5);
+        mintAmounts[0] = 60;
+        mintAmounts[1] = 120;
+        mintAmounts[2] = 180;
+        mintAmounts[3] = 240;
+        mintAmounts[4] = 300;
+
+        uint256[] memory burnAmounts = new uint256[](5);
+        burnAmounts[0] = 100;
+        burnAmounts[1] = 200;
+        burnAmounts[2] = 300;
+        burnAmounts[3] = 400;
+        burnAmounts[4] = 500;
+
+        token.batchMint(address(0xBABE), ids, mintAmounts, "");
+
+        vm.expectRevert(stdError.arithmeticError);
+
+        token.batchBurn(address(0xBABE), ids, burnAmounts);
+    }
+
+    function testBatchBurnWhenArrayLengthMismatchShouldFail() public {
+        uint256[] memory ids = new uint256[](5);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+        ids[4] = 1341;
+
+        uint256[] memory mintAmounts = new uint256[](5);
+        mintAmounts[0] = 100;
+        mintAmounts[1] = 200;
+        mintAmounts[2] = 300;
+        mintAmounts[3] = 400;
+        mintAmounts[4] = 500;
+
+        uint256[] memory burnAmounts = new uint256[](4);
+        burnAmounts[0] = 100;
+        burnAmounts[1] = 200;
+        burnAmounts[2] = 300;
+        burnAmounts[3] = 400;
+
+        token.batchMint(address(0xBABE), ids, mintAmounts, "");
+
+        vm.expectRevert("LENGTH_MISMATCH");
+
+        token.batchBurn(address(0xBABE), ids, burnAmounts);
+    }
+
+    function testBalanceOfBatchWhenArrayLengthMismatchShouldFail() public {
+        address[] memory tos = new address[](5);
+        tos[0] = address(0xBEEF);
+        tos[1] = address(0xCAFE);
+        tos[2] = address(0xFACE);
+        tos[3] = address(0xDEAD);
+        tos[4] = address(0xFEED);
+
+        uint256[] memory ids = new uint256[](4);
+        ids[0] = 1337;
+        ids[1] = 1338;
+        ids[2] = 1339;
+        ids[3] = 1340;
+
+        vm.expectRevert("LENGTH_MISMATCH");
+
+        token.balanceOfBatch(tos, ids);
+    }
     
+    // TODO add fuzz tests
 
     ////////////////////////////////////////////////
     ////////////////    Utility    /////////////////
     ////////////////////////////////////////////////
 
-    // TODO submit PR to foundry to add this assertion
+    // TODO consider PR to foundry to add this assertion
 
     function assertEq(uint256[] memory a, uint256[] memory b) internal {
         require (a.length == b.length, "Array length mismatch");
