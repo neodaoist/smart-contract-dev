@@ -4,6 +4,7 @@ pragma solidity >=0.8.13;
 import "forge-std/Test.sol";
 
 contract Reverter {
+    //
     function shouldRevert(bool shouldIt) public {
         require(!shouldIt, "REVERT");
     }

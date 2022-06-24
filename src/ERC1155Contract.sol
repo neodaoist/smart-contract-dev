@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.13;
 
-import 'solmate/tokens/ERC1155.sol';
+import "solmate/tokens/ERC1155.sol";
 
 contract ERC1155Contract is ERC1155 {
-
+    //
     function uri(uint256) public pure virtual override returns (string memory) {}
 
     function mint(

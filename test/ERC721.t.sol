@@ -5,14 +5,14 @@ import "forge-std/Test.sol";
 import "../src/ERC721Contract.sol";
 
 contract ERC721Test is Test {
-    
+    //
     using stdStorage for StdStorage;
 
     ERC721Contract token;
 
     event Transfer(address indexed from, address indexed to, uint256 indexed id);
     event Approval(address indexed owner, address indexed spender, uint256 indexed id);
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);    
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
 
     function setUp() public {
         token = new ERC721Contract("Token", "TKN");
@@ -214,7 +214,7 @@ contract ERC721Test is Test {
 
         token.balanceOf(address(0));
     }
-    
+
     // TODO add remaining fuzz tests
 
     ////////////////////////////////////////////////
@@ -396,7 +396,6 @@ contract ERC721Test is Test {
 
     function testSafeTransferFromToNonERC721RecipientShouldFail() public {
         token.mint(address(this), 1337);
-
         address to = address(new NonERC721Recipient());
 
         vm.expectRevert();
@@ -489,7 +488,7 @@ contract ERC721Test is Test {
         address to = address(new NonERC721Recipient());
 
         vm.expectRevert();
-        
+
         token.safeMint(to, 1337);
     }
 
@@ -504,7 +503,7 @@ contract ERC721Test is Test {
     function testSafeMintToRevertingERC721RecipientShouldFail() public {
         address to = address(new RevertingERC721Recipient());
 
-        vm.expectRevert(bytes(string(abi.encodePacked(ERC721TokenReceiver.onERC721Received.selector))));
+        vm.expectRevert(ERC721TokenReceiver.onERC721Received.selector);
 
         token.safeMint(to, 1337);
     }
@@ -546,7 +545,6 @@ contract ERC721Test is Test {
     ////////////////////////////////////////////////
 
     // TODO add ERC721Enumerable
-    
 }
 
 contract ERC721Recipient is ERC721TokenReceiver {
@@ -572,7 +570,7 @@ contract ERC721Recipient is ERC721TokenReceiver {
 
 contract NonERC721Recipient {}
 
-contract RevertingERC721Recipient is ERC721TokenReceiver  {
+contract RevertingERC721Recipient is ERC721TokenReceiver {
     event log(string info);
 
     function onERC721Received(

@@ -4,6 +4,7 @@ pragma solidity >=0.8.13;
 import "solmate/tokens/ERC721.sol";
 
 contract ERC721Contract is ERC721 {
+    //
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
     function tokenURI(uint256) public pure virtual override returns (string memory) {}

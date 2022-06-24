@@ -1,0 +1,50 @@
+{
+
+    "section header": {
+        "prefix": "sh",
+        "body": [
+            "/*//////////////////////////////////////////////////////////////",
+            "                    $1",
+            "//////////////////////////////////////////////////////////////*/"
+        ],
+        "description": "Add section header"
+    },
+
+    "function definition": {
+        "prefix": "fn",
+        "body": [
+            "function $1($2) $3 {",
+            "    $0",
+            "}"
+        ],
+        "description": "Add function definition"
+    },
+
+    "forge test": {
+        "prefix": "ft",
+        "body": [
+            "function test$1() public {",
+            "    $0",
+            "}"
+        ],
+        "description": "Add forge test"
+    },
+
+    "forge fuzz test": {
+        "prefix": "fz",
+        "body": [
+            "function test$1($2) public {",
+            "   $0",
+            "}"
+        ],
+        "description": "Add forge fuzz test"
+    },
+
+    "forge assert equals": {
+        "prefix": "ae",
+        "body": [
+            "assertEq($1, $2);"
+        ],
+        "description": "Add forge assert equals"
+    }
+}

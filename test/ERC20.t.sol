@@ -5,21 +5,21 @@ import "forge-std/Test.sol";
 import "../src/ERC20Contract.sol";
 
 contract ERC20Test is Test {
-
+    //
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Approval(address indexed owner, address indexed spender, uint256 amount);
-    
+
     ERC20Contract token;
 
     bytes32 constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     function setUp() public {
-      token = new ERC20Contract("Token", "TKN", 18);
+        token = new ERC20Contract("Token", "TKN", 18);
     }
 
     function testInvariantMetadata() public {
-        assertEq(token.name() , "Token");
+        assertEq(token.name(), "Token");
         assertEq(token.symbol(), "TKN");
         assertEq(token.decimals(), 18);
     }
@@ -106,7 +106,7 @@ contract ERC20Test is Test {
 
     function testTransferFromWhenInsufficientAllowanceShouldFail() public {
         address from = address(0xABCD);
-        
+
         token.mint(from, 1e18);
 
         vm.prank(from);
@@ -270,5 +270,4 @@ contract ERC20Test is Test {
     // TODO add fuzz tests
 
     // TODO add invariant test
-
 }

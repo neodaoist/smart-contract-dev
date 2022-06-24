@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 contract Cheater {
-
+    //
     error LieTold();
     error LieToldWithParams(uint256 _input);
 

@@ -6,7 +6,7 @@ import "../src/ERC1155Contract.sol";
 import {ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
 
 contract ERC1155Test is Test {
-
+    //
     event TransferSingle(
         address indexed operator,
         address indexed from,
@@ -30,7 +30,7 @@ contract ERC1155Test is Test {
     ERC1155Contract token;
 
     function setUp() public {
-      token = new ERC1155Contract();
+        token = new ERC1155Contract();
     }
 
     ////////////////////////////////////////////////
@@ -195,7 +195,7 @@ contract ERC1155Test is Test {
         token.mint(address(0xBABE), 1337, 40, "");
 
         //vm.expectRevert("Arithmetic over/underflow"); // TODO research if this is possible
-        
+
         token.burn(address(0xBABE), 1337, 100);
     }
 
@@ -434,14 +434,14 @@ contract ERC1155Test is Test {
         token.mint(address(0xBABE), 1337, 100, "");
 
         vm.expectRevert();
-        
+
         vm.prank(address(0xBABE));
         token.safeTransferFrom(address(0xBABE), to, 1337, 60, "");
     }
 
     function testSafeTransferFromToRevertingERC1155RecipientShouldFail() public {
         address to = address(new RevertingERC1155Recipient());
-        
+
         token.mint(address(0xBABE), 1337, 100, "");
 
         vm.expectRevert(bytes(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155Received.selector))));
@@ -452,7 +452,7 @@ contract ERC1155Test is Test {
 
     function testSafeTransferFromToWrongDataERC1155RecipientShouldFail() public {
         address to = address(new WrongReturnDataERC1155Recipient());
-        
+
         token.mint(address(0xBABE), 1337, 100, "");
 
         vm.expectRevert("NOT_AUTHORIZED");
@@ -577,7 +577,7 @@ contract ERC1155Test is Test {
         token.batchMint(from, ids, amounts, "");
 
         vm.prank(from);
-        token.setApprovalForAll(address(this), true);   
+        token.setApprovalForAll(address(this), true);
 
         vm.expectRevert(bytes(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155BatchReceived.selector))));
 
@@ -826,7 +826,7 @@ contract ERC1155Test is Test {
 
         token.balanceOfBatch(tos, ids);
     }
-    
+
     // TODO add fuzz tests
 
     ////////////////////////////////////////////////
@@ -836,17 +836,15 @@ contract ERC1155Test is Test {
     // TODO consider PR to foundry to add this assertion
 
     function assertEq(uint256[] memory a, uint256[] memory b) internal {
-        require (a.length == b.length, "Array length mismatch");
+        require(a.length == b.length, "Array length mismatch");
 
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             assertEq(a[i], b[i]);
         }
     }
-
 }
 
 contract ERC1155Recipient is ERC1155TokenReceiver {
-
     address public operator;
     address public from;
     uint256 public id;
@@ -903,7 +901,6 @@ contract ERC1155Recipient is ERC1155TokenReceiver {
 contract NonERC1155Recipient {}
 
 contract RevertingERC1155Recipient is ERC1155TokenReceiver {
-
     function onERC1155Received(
         address,
         address,
@@ -926,7 +923,6 @@ contract RevertingERC1155Recipient is ERC1155TokenReceiver {
 }
 
 contract WrongReturnDataERC1155Recipient is ERC1155TokenReceiver {
-
     function onERC1155Received(
         address,
         address,

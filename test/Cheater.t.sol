@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import 'forge-std/Test.sol';
-import '../src/Cheater.sol';
+import "forge-std/Test.sol";
+import "../src/Cheater.sol";
 
 contract CheaterTest is Test {
-
+    //
     Cheater cheater;
 
     function setUp() public {
-      cheater = new Cheater();
+        cheater = new Cheater();
     }
 
     function testTellTruth_shouldRevertIfNot1337() public {
@@ -33,9 +33,7 @@ contract CheaterTest is Test {
     }
 
     function testTellTruthWithErrorWithParams_shouldThrowIfNot1337() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(Cheater.LieToldWithParams.selector, 1)
-        );
+        vm.expectRevert(abi.encodeWithSelector(Cheater.LieToldWithParams.selector, 1));
 
         cheater.tellTruthWithErrorWithParams(1);
     }
