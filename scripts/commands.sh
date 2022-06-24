@@ -6,10 +6,24 @@ cast call --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY <contractAddress> "owner
 cast call --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY <contractAddress> "tokenURI(uint256)" 1
 cast call --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY <contractAddress> "balanceOf(address)" <eoaAddress>
 
-# Test commands
+# forge
+## General commands
+
+## Project commands
+
+## Build commands
+
+## Test commands
 forge test
 forge test -vvv
 forge test --match-contract <testSuiteName>
 
-## Etherscan verification
+## Deploy commands
+forge create <contractFile> --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY
 forge verify-contract --compiler-version "<compilerVersion>" <contractAddress> <contractFile> "<etherscanKey>" --chain-id=<chainId>
+
+## Utility commands
+
+# cast
+
+# anvil

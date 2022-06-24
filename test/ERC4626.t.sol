@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.15;
 
-import {Test} from "forge-std/Test.sol";
+import "forge-std/Test.sol";
 import {ERC20Contract} from "../src/ERC20Contract.sol";
 import {ERC4626Contract} from "../src/ERC4626Contract.sol";
 
@@ -122,4 +122,30 @@ contract ERC4626Test is Test {
         assertEq(vault.convertToAssets(vault.balanceOf(alice)), 0);
         assertEq(underlying.balanceOf(alice), alicePreDepositBal);
     }
+
+    // TODO testMultipleMintDepositRedeemWithdraw
+
+    function testDepositWhenNotEnoughApprovalShouldFail() public {
+        underlying.mint(address(this), 0.5e18);
+        underlying.approve(address(vault), 0.5e18);
+
+        assertEq(underlying.allowance(address(this), address(vault)), 0.5e18);
+
+        vm.expectRevert("TRANSFER_FROM_FAILED");
+
+        vault.deposit(1e18, address(this));
+    }
+
+    function testWithdrawWhenNotEnoughUnderlyingAmountShouldFail() public {
+        underlying.mint(address(this), 0.5e18);
+        underlying.approve(address(vault), 0.5e18);
+
+        vault.deposit(0.5e18, address(this));
+
+        vm.expectRevert(stdError.arithmeticError);
+
+        vault.withdraw(1e18, address(this), address(this));
+    }
+
+    // TODO more sad path tests
 }
