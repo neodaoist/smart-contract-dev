@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.13;
+pragma solidity >=0.8.15;
 
 import "forge-std/Test.sol";
 import "../src/ERC1155Contract.sol";
@@ -834,14 +834,15 @@ contract ERC1155Test is Test {
     ////////////////////////////////////////////////
 
     // TODO consider PR to foundry to add this assertion
+    // CRAP they added it in the latest version! =)
 
-    function assertEq(uint256[] memory a, uint256[] memory b) internal {
-        require(a.length == b.length, "Array length mismatch");
+    // function assertEq(uint256[] memory a, uint256[] memory b) internal {
+    //     require(a.length == b.length, "Array length mismatch");
 
-        for (uint256 i = 0; i < a.length; i++) {
-            assertEq(a[i], b[i]);
-        }
-    }
+    //     for (uint256 i = 0; i < a.length; i++) {
+    //         assertEq(a[i], b[i]);
+    //     }
+    // }
 }
 
 contract ERC1155Recipient is ERC1155TokenReceiver {
