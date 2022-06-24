@@ -2,8 +2,9 @@
 pragma solidity >=0.8.15;
 
 import "forge-std/Test.sol";
-import {ERC20Contract} from "../src/ERC20Contract.sol";
-import {ERC4626Contract} from "../src/ERC4626Contract.sol";
+
+import {ERC20Contract} from "../../src/solmate/ERC20Contract.sol";
+import {ERC4626Contract} from "../../src/solmate/ERC4626Contract.sol";
 
 contract ERC4626Test is Test {
     //

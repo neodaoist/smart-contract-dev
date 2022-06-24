@@ -2,8 +2,8 @@
 pragma solidity >=0.8.15;
 
 import "solmate/tokens/ERC721.sol";
-import "openzeppelin-contracts/contracts/utils/Strings.sol";
-import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "openzeppelin/contracts/utils/Strings.sol";
+import "openzeppelin/contracts/access/Ownable.sol";
 
 error MintPriceNotPaid();
 error MaxSupply();

@@ -2,8 +2,9 @@
 pragma solidity >=0.8.15;
 
 import "forge-std/Test.sol";
-import "../src/ERC1155Contract.sol";
 import {ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
+
+import "../../src/solmate/ERC1155Contract.sol";
 
 contract ERC1155Test is Test {
     //

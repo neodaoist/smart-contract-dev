@@ -2,7 +2,8 @@
 pragma solidity >=0.8.15;
 
 import "forge-std/Test.sol";
-import "../src/ERC721Contract.sol";
+
+import "../../src/solmate/ERC721Contract.sol";
 
 contract ERC721Test is Test {
     //
