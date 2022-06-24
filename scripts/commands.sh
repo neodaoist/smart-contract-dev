@@ -8,8 +8,8 @@ cast call --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY <contractAddress> "balan
 
 # Test commands
 forge test
-forge test -vvvv
+forge test -vvv
 forge test --match-contract <testSuiteName>
 
 ## Etherscan verification
-
+forge verify-contract --compiler-version "<compilerVersion>" <contractAddress> <contractFile> "<etherscanKey>" --chain-id=<chainId>
