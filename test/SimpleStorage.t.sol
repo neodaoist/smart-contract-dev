@@ -12,7 +12,22 @@ contract SimpleStorageTest is Test {
         ss = new SimpleStorage();
     }
 
-    function testSimpleStorage() public {
+    function testSimpleStorageWhenSingle() public {
+        ss.set(123);
+
+        assertEq(ss.get(), 123);
+    }
+
+    function testSimpleStorageWhenMultiple() public {
+        ss.set(123);
+
+        assertEq(ss.get(), 123);
+
+        ss.set(456);
+
+        assertEq(ss.get(), 456);
+
+        ss.set(789);
         ss.set(123);
 
         assertEq(ss.get(), 123);
