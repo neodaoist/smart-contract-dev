@@ -17,6 +17,7 @@ cast call --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY <contractAddress> "balan
 forge test
 forge test -vvv
 forge test --match-contract <testSuiteName>
+forge test --fork-url <rpcURL> --fork-block-number <blockNumber>
 
 ## Deploy commands
 forge create <contractFile> --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY
