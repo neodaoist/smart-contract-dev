@@ -121,6 +121,15 @@ contract ERC721Test is Test {
         assertEq(token.getApproved(1337), address(0xBABE));
     }
 
+    function testMultipleApprove() public {
+        token.mint(address(this), 1337);
+
+        token.approve(address(0xABCD), 1337);
+        token.approve(address(0xBABE), 1337);
+
+        assertEq(token.getApproved(1337), address(0xBABE));
+    }
+
     function testApproveBurn() public {
         token.mint(address(this), 1337);
 
