@@ -3,7 +3,7 @@ pragma solidity >=0.8.15;
 
 import "forge-std/Test.sol";
 
-import "src/solmate/ERC20Contract.sol";
+import "src/sm/ERC20Contract.sol";
 
 contract ForkingTest is Test {
     //
