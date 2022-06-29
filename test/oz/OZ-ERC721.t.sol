@@ -44,11 +44,46 @@ contract ERC721Test is Test {
         vm.stopPrank();
     }
 
-    /*//////////////////////////////////////////////////////////////
-                        Based on OZ JS test suite
-    //////////////////////////////////////////////////////////////*/
+    function thenTransferWasSuccessful(address from_, address to_, uint256 tokenID_) internal {
+        // transfers the ownership of the given token ID to the given address
+        assertEq(token.ownerOf(tokenID_), to_);
+
+        // emits a Transfer event
+        // vm.expectEmit(true, true, true, true);
+        // emit Transfer(owner, to, 123);
+
+        // clears the approval for the token ID
+        assertEq(token.getApproved(123), address(0));
+
+        // emits an Approval event
+        // vm.expectEmit(true, true, true, true);
+        // emit Approval(owner, address(0), 123);
+
+        // adjusts owners balances
+        assertEq(token.balanceOf(owner), 1);
+        assertEq(token.balanceOf(to), 1);
+
+        // adjusts owners tokens by index
+        assertEq(token.ownerOf(123), to);
+    }
+
+    function thenTransferWasSuccessful_events(address from_, address to_, uint256 tokenID_) internal {        
+        // need to expect these logs in reverse order
+
+        // emits an Approval event
+        vm.expectEmit(true, true, true, true);
+        emit Approval(owner, address(0), 123);
+
+        // emits a Transfer event
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(owner, to, 123);
+    }
 
     // TODO add ERC165 and ERC721 interface tests
+
+    /*//////////////////////////////////////////////////////////////
+                        Balances and Owners
+    //////////////////////////////////////////////////////////////*/
 
     function testBalanceOf_whenAddressOwnsTokens_thenReturnCorrectAmountOfTokens() public {
         givenMintedTokens();
@@ -84,75 +119,136 @@ contract ERC721Test is Test {
         token.ownerOf(13);
     }
 
-    function testTransferFrom_whenTokenIsTransferred_thenUpdateOwner() public {
+    /*//////////////////////////////////////////////////////////////
+                        Transfers
+    //////////////////////////////////////////////////////////////*/
+
+    function testTransfer_whenCalledByOwner_shouldTransferTokens() public {
         givenMintedTokens();
-        andSetupApprovals();
 
-        vm.prank(approved);
-        token.transferFrom(owner, to, 123);
+        thenTransferWasSuccessful_events(owner, to, 123);
 
-        assertEq(token.ownerOf(123), to);
+        vm.prank(owner);
+        token.transferFrom(owner, to, 123); // TODO should this use _transfer ?
+
+        thenTransferWasSuccessful(owner, to, 123);
     }
 
-    function testTransferFrom_whenTokenIsTransferred_thenEmitTransfer() public {
-        givenMintedTokens();
-        andSetupApprovals();
-
-        vm.expectEmit(true, true, true, true);
-        emit Transfer(owner, to, 123);
-
-        vm.prank(approved);
-        token.transferFrom(owner, to, 123);
+    function testTransfer_whenCalledByApprovedEOA_shouldTransferTokens() public {
+        assertTrue(false);
     }
 
-    function testTransferFrom_whenTokenIsTransferred_thenCleanApproval() public {
-        givenMintedTokens();
-        andSetupApprovals();
-
-        vm.prank(approved);
-        token.transferFrom(owner, to, 123);
-
-        assertEq(token.getApproved(123), address(0));
+    function testTransfer_whenCalledByOperator_shouldTransferTokens() public {
+        assertTrue(false);
     }
 
-    function testTransferFrom_whenTokenIsTransferred_thenEmitApprovalOfZeroAddress() public {
-        givenMintedTokens();
-        andSetupApprovals();
-
-        vm.expectEmit(true, true, true, true);
-        emit Approval(owner, address(0), 123);
-
-        vm.prank(approved);
-        token.transferFrom(owner, to, 123);
+    function testTransfer_whenCalledByOwnerWithoutApprovedEOA_shouldTransferTokens() public {
+        assertTrue(false);
     }
 
-    function testTransferFrom_whenTokenIsTransferred_thenUpdateBalances() public {
-        givenMintedTokens();
-        andSetupApprovals();
+    function testTransfer_whenSentToTheOwner_shouldDoXYZ() public {
+        assertTrue(false);
 
-        // to improve test readability
-        assertEq(token.balanceOf(owner), 2);
-        assertEq(token.balanceOf(to), 0);
+        // keeps ownership of the token
 
-        vm.prank(approved);
-        token.transferFrom(owner, to, 123);
+        // clears the approval for the tokenID
 
-        assertEq(token.balanceOf(owner), 1);
-        assertEq(token.balanceOf(to), 1);
+        // emits only a Transfer event
+
+        // keeps the owner balance
+
+        // keeps same token by index
     }
 
-    function testTransferFrom_whenTokenIsTransferred_thenUpdateOwners() public {
-        givenMintedTokens();
-        andSetupApprovals();
-
-        // to improve test readability
-        assertEq(token.ownerOf(123), owner);
-
-        vm.prank(approved);
-        token.transferFrom(owner, to, 123);
-
-        assertEq(token.ownerOf(123), to);
+    function testTransfer_whenFromAddressIsNotOwner_shouldThrow() public {
+        assertTrue(false);
     }
+
+    function testTransfer_whenSenderIsNotAuthorized_shouldThrow() public {
+        assertTrue(false);
+    }
+
+    function testTransfer_whenTokenDoesNotExist_shouldThrow() public {
+        assertTrue(false);
+    }
+
+    function testTransfer_whenToIsZeroAddress_shouldThrow() public {
+        assertTrue(false);
+    }
+
+    // via transferFrom
+
+    // via safeTransferFrom
+
+    // function testTransferFrom_whenTokenIsTransferred_thenUpdateOwner() public {
+    //     givenMintedTokens();
+    //     andSetupApprovals();
+
+    //     vm.prank(approved);
+    //     token.transferFrom(owner, to, 123);
+
+    //     assertEq(token.ownerOf(123), to);
+    // }
+
+    // function testTransferFrom_whenTokenIsTransferred_thenEmitTransfer() public {
+    //     givenMintedTokens();
+    //     andSetupApprovals();
+
+    //     vm.expectEmit(true, true, true, true);
+    //     emit Transfer(owner, to, 123);
+
+    //     vm.prank(approved);
+    //     token.transferFrom(owner, to, 123);
+    // }
+
+    // function testTransferFrom_whenTokenIsTransferred_thenClearApproval() public {
+    //     givenMintedTokens();
+    //     andSetupApprovals();
+
+    //     vm.prank(approved);
+    //     token.transferFrom(owner, to, 123);
+
+    //     assertEq(token.getApproved(123), address(0));
+    // }
+
+    // function testTransferFrom_whenTokenIsTransferred_thenEmitApprovalOfZeroAddress() public {
+    //     givenMintedTokens();
+    //     andSetupApprovals();
+
+    //     vm.expectEmit(true, true, true, true);
+    //     emit Approval(owner, address(0), 123);
+
+    //     vm.prank(approved);
+    //     token.transferFrom(owner, to, 123);
+    // }
+
+    // function testTransferFrom_whenTokenIsTransferred_thenUpdateBalances() public {
+    //     givenMintedTokens();
+    //     andSetupApprovals();
+
+    //     // to improve test readability
+    //     assertEq(token.balanceOf(owner), 2);
+    //     assertEq(token.balanceOf(to), 0);
+
+    //     vm.prank(approved);
+    //     token.transferFrom(owner, to, 123);
+
+    //     assertEq(token.balanceOf(owner), 1);
+    //     assertEq(token.balanceOf(to), 1);
+    // }
+
+    // function testTransferFrom_whenTokenIsTransferred_thenUpdateOwners() public {
+    //     givenMintedTokens();
+    //     andSetupApprovals();
+
+    //     // to improve test readability
+    //     assertEq(token.ownerOf(123), owner);
+
+    //     vm.prank(approved);
+    //     token.transferFrom(owner, to, 123);
+
+    //     assertEq(token.ownerOf(123), to);
+    // }
 
     /*//////////////////////////////////////////////////////////////
                         Based on OZ functions, bottoms-up
