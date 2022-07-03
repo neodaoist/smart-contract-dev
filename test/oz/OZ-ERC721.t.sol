@@ -134,51 +134,142 @@ contract ERC721Test is Test {
         thenTransferWasSuccessful(owner, to, 123);
     }
 
+    // NOTE this is starting to feel like too much misdirection
     function testTransfer_whenCalledByApprovedEOA_shouldTransferTokens() public {
-        assertTrue(false);
+        givenMintedTokens();
+        andSetupApprovals();
+
+        thenTransferWasSuccessful_events(owner, to, 123);
+
+        vm.prank(approved);
+        token.transferFrom(owner, to, 123);
+
+        thenTransferWasSuccessful(owner, to, 123);
     }
 
     function testTransfer_whenCalledByOperator_shouldTransferTokens() public {
-        assertTrue(false);
+        givenMintedTokens();
+        andSetupApprovals();
+
+        thenTransferWasSuccessful_events(owner, to, 123);
+
+        vm.prank(operator);
+        token.transferFrom(owner, to, 123);
+
+        thenTransferWasSuccessful(owner, to, 123);
     }
 
     function testTransfer_whenCalledByOwnerWithoutApprovedEOA_shouldTransferTokens() public {
-        assertTrue(false);
+        givenMintedTokens();
+        andSetupApprovals();
+        vm.prank(owner);
+        token.approve(address(0), 123); // revoke approved address
+
+        thenTransferWasSuccessful_events(owner, to, 123);
+
+        vm.prank(owner);
+        token.transferFrom(owner, to, 123);
+
+        thenTransferWasSuccessful(owner, to, 123);
+    }
+    
+    // NOTE unclear on zoom level — should these "whenSentToOwner" be one or multiple tests
+    function testTransfer_whenSentToOwner_shouldKeepOwnershipOfToken() public {
+        givenMintedTokens();
+        andSetupApprovals(); // NOTE also seems silly calling approvals when not part of test conditions
+
+        vm.prank(owner);
+        token.transferFrom(owner, owner, 123);
+
+        assertEq(token.ownerOf(123), owner);
     }
 
-    function testTransfer_whenSentToTheOwner_shouldDoXYZ() public {
-        assertTrue(false);
+    function testTransfer_whenSentToOwner_shouldClearApproval() public {
+        givenMintedTokens();
+        andSetupApprovals();
 
-        // keeps ownership of the token
+        vm.prank(owner);
+        token.transferFrom(owner, owner, 123);
 
-        // clears the approval for the tokenID
-
-        // emits only a Transfer event
-
-        // keeps the owner balance
-
-        // keeps same token by index
+        assertEq(token.getApproved(123), address(0));
     }
+
+    function testTransfer_whenSentToOwner_shouldOnlyEmitTransferEvent() public {
+        givenMintedTokens();
+        andSetupApprovals();
+
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(owner, owner, 123);
+
+        vm.prank(owner);
+        token.transferFrom(owner, owner, 123);
+    }
+
+    function testTransfer_whenSentToOwner_shouldKeepOwnersBalance() public {
+        givenMintedTokens();
+        andSetupApprovals();
+
+        vm.prank(owner);
+        token.transferFrom(owner, owner, 123);
+
+        assertEq(token.balanceOf(owner), 2);
+    }
+
+    // TODO shouldn't this be just for ERC721Enumerable? but found in oz/ERC721.behavior.js#171
+    // function testTransfer_whenSentToOwner_shouldKeepSameTokenByIndex() public {
+    //     givenMintedTokens();
+    //     andSetupApprovals();
+
+    //     vm.prank(owner);
+    //     token.transferFrom(owner, to, 123);
+
+    // }
 
     function testTransfer_whenFromAddressIsNotOwner_shouldThrow() public {
-        assertTrue(false);
+        givenMintedTokens();
+        andSetupApprovals();
+
+        vm.expectRevert("ERC721: transfer from incorrect owner");
+
+        vm.prank(owner);
+        token.transferFrom(rando, to, 123);
     }
 
     function testTransfer_whenSenderIsNotAuthorized_shouldThrow() public {
-        assertTrue(false);
+        givenMintedTokens();
+        andSetupApprovals();
+
+        vm.expectRevert("ERC721: caller is not token owner nor approved");
+
+        vm.prank(rando);
+        token.transferFrom(owner, to, 123);
     }
 
     function testTransfer_whenTokenDoesNotExist_shouldThrow() public {
-        assertTrue(false);
+        givenMintedTokens();
+        andSetupApprovals();
+
+        vm.expectRevert("ERC721: invalid token ID");
+
+        vm.prank(owner);
+        token.transferFrom(owner, to, 789);
     }
 
     function testTransfer_whenToIsZeroAddress_shouldThrow() public {
-        assertTrue(false);
+        givenMintedTokens();
+        andSetupApprovals();
+
+        vm.expectRevert("ERC721: transfer to the zero address");
+
+        vm.prank(owner);
+        token.transferFrom(owner, address(0), 123);
     }
 
     // via transferFrom
 
     // via safeTransferFrom
+
+
 
     // function testTransferFrom_whenTokenIsTransferred_thenUpdateOwner() public {
     //     givenMintedTokens();
