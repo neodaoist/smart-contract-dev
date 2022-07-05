@@ -79,10 +79,29 @@ contract ERC721Test is Test {
         emit Transfer(owner, to, 123);
     }
 
+    // function shouldTransferTokensByUsers() {
+
+    // }
+
+    function shouldSafeTransferTokensByUsers(address from_, address to_, uint256 tokenID_) internal {
+        // When called by owner
+        token.safeTransferFrom(from_, to_, tokenID_);
+        thenTransferWasSuccessful(from_, to_, tokenID_);
+
+        // When called by approved account
+        vm.prank(approved);
+        token.safeTransferFrom(from_, to_, tokenID_);
+
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        Interface tests
+    //////////////////////////////////////////////////////////////*/
+
     // TODO add ERC165 and ERC721 interface tests
 
     /*//////////////////////////////////////////////////////////////
-                        Balances and Owners
+                        balanceOf
     //////////////////////////////////////////////////////////////*/
 
     function testBalanceOf_whenAddressOwnsTokens_thenReturnCorrectAmountOfTokens() public {
@@ -97,7 +116,7 @@ contract ERC721Test is Test {
         assertEq(token.balanceOf(rando), 0);
     }
 
-    function testBalanceOf_whenQueryingZeroAddress_thenThrow() public {
+    function testBalanceOf_whenQueryingZeroAddress_thenRevert() public {
         givenMintedTokens();
 
         vm.expectRevert("ERC721: address zero is not a valid owner");
@@ -105,13 +124,17 @@ contract ERC721Test is Test {
         token.balanceOf(address(0));
     }
 
+    /*//////////////////////////////////////////////////////////////
+                        ownerOf
+    //////////////////////////////////////////////////////////////*/
+
     function testOwnerOf_whenTokenExists_thenReturnCorrectOwner() public {
         givenMintedTokens();
 
         assertEq(token.ownerOf(123), owner);
     }
 
-    function testOwnerOf_whenTokenDoesNotExist_thenThrow() public {
+    function testOwnerOf_whenTokenDoesNotExist_thenRevert() public {
         givenMintedTokens();
 
         vm.expectRevert("ERC721: invalid token ID");
@@ -120,7 +143,7 @@ contract ERC721Test is Test {
     }
 
     /*//////////////////////////////////////////////////////////////
-                        Transfers
+                        Transfers via transferFrom
     //////////////////////////////////////////////////////////////*/
 
     function testTransfer_whenCalledByOwner_shouldTransferTokens() public {
@@ -225,7 +248,7 @@ contract ERC721Test is Test {
 
     // }
 
-    function testTransfer_whenFromAddressIsNotOwner_shouldThrow() public {
+    function testTransfer_whenFromAddressIsNotOwner_shouldRevert() public {
         givenMintedTokens();
         andSetupApprovals();
 
@@ -235,7 +258,7 @@ contract ERC721Test is Test {
         token.transferFrom(rando, to, 123);
     }
 
-    function testTransfer_whenSenderIsNotAuthorized_shouldThrow() public {
+    function testTransfer_whenSenderIsNotAuthorized_shouldRevert() public {
         givenMintedTokens();
         andSetupApprovals();
 
@@ -245,7 +268,7 @@ contract ERC721Test is Test {
         token.transferFrom(owner, to, 123);
     }
 
-    function testTransfer_whenTokenDoesNotExist_shouldThrow() public {
+    function testTransfer_whenTokenDoesNotExist_shouldRevert() public {
         givenMintedTokens();
         andSetupApprovals();
 
@@ -255,7 +278,7 @@ contract ERC721Test is Test {
         token.transferFrom(owner, to, 789);
     }
 
-    function testTransfer_whenToIsZeroAddress_shouldThrow() public {
+    function testTransfer_whenToIsZeroAddress_shouldRevert() public {
         givenMintedTokens();
         andSetupApprovals();
 
@@ -265,11 +288,7 @@ contract ERC721Test is Test {
         token.transferFrom(owner, address(0), 123);
     }
 
-    // via transferFrom
-
-    // via safeTransferFrom
-
-
+    // NOTE another approach to porting the OZ hardhat/mocha/chai tests
 
     // function testTransferFrom_whenTokenIsTransferred_thenUpdateOwner() public {
     //     givenMintedTokens();
@@ -340,6 +359,137 @@ contract ERC721Test is Test {
 
     //     assertEq(token.ownerOf(123), to);
     // }
+
+    /*//////////////////////////////////////////////////////////////
+                        Transfers via safeTransferFrom
+    //////////////////////////////////////////////////////////////*/
+
+    // function testSafeTransferFrom_shouldTransferToEOA() public {
+        
+    // }
+
+    /*//////////////////////////////////////////////////////////////
+                        safeMint
+    //////////////////////////////////////////////////////////////*/
+
+    //
+
+    /*//////////////////////////////////////////////////////////////
+                        approve
+    //////////////////////////////////////////////////////////////*/
+
+    // 3 Then asserts
+    // Then it clears approval
+    // Then it approves
+    // Then it emits event
+
+    function testApprove_givenNoPriorApproval_whenClearingApproval_thenShouldClearApprovalAndEmitEvent() public {
+        givenMintedTokens();
+
+        vm.expectEmit(true, true, true, true);
+        emit Approval(owner, address(0), 123);
+
+        vm.prank(owner);
+        token.approve(address(0), 123);
+
+        assertEq(token.getApproved(123), address(0));
+    }
+
+    function testApprove_givenPriorApproval_whenClearingApproval_thenShouldClearApprovalAndEmitEvent() public {
+        givenMintedTokens();
+        vm.prank(owner);
+        token.approve(approved, 123);
+
+        vm.expectEmit(true, true, true, true);
+        emit Approval(owner, address(0), 123);
+
+        vm.prank(owner);
+        token.approve(address(0), 123);
+
+        assertEq(token.getApproved(123), address(0));
+    }
+
+    function testApprove_givenNoPriorApproval_whenApprovingAddress_thenShouldApproveAndEmitEvent() public {
+        givenMintedTokens();
+
+        vm.expectEmit(true, true, true, true);
+        emit Approval(owner, approved, 123);
+
+        vm.prank(owner);
+        token.approve(approved, 123);
+
+        assertEq(token.getApproved(123), approved);
+    }
+
+    function testApprove_givenPriorApprovalOfSameAddress_whenApprovingAddress_thenShouldApproveAndEmitEvent() public {
+        givenMintedTokens();
+        vm.prank(owner);
+        token.approve(approved, 123);
+
+        vm.expectEmit(true, true, true, true);
+        emit Approval(owner, approved, 123);
+
+        vm.prank(owner);
+        token.approve(approved, 123);
+
+        assertEq(token.getApproved(123), approved);
+    }
+
+    function testApprove_givenPriorApprovalOfDifferentAddress_whenApprovingAddress_thenShouldApproveAndEmitEvent() public {
+        givenMintedTokens();
+        vm.prank(owner);
+        token.approve(rando, 123);
+
+        vm.expectEmit(true, true, true, true);
+        emit Approval(owner, approved, 123);
+
+        vm.prank(owner);
+        token.approve(approved, 123);
+
+        assertEq(token.getApproved(123), approved);
+    }
+
+    function testApprove_whenApprovingOwner_thenShouldRevert() public {
+        givenMintedTokens();
+
+        vm.expectRevert("ERC721: approval to current owner");
+
+        vm.prank(owner);
+        token.approve(owner, 123);
+    }
+
+    // TODO there might be a mistake in OZ ERC721.behavior.js#L512 (expectRevert missing " for all")
+    function testApprove_whenSenderIsNotOwner_thenShouldRevert() public {
+        givenMintedTokens();
+
+        vm.expectRevert("ERC721: approve caller is not token owner nor approved for all");
+
+        token.approve(approved, 123);
+    }
+
+    function testApprove_whenSenderIsAlreadyApproved_thenShouldRevert() public {
+        givenMintedTokens();
+        vm.prank(owner);
+        token.approve(approved, 123);
+
+        // NOTE this is a weird error that OZ throws in this scenario
+        vm.expectRevert("ERC721: approve caller is not token owner nor approved for all");
+
+        vm.prank(approved);
+        token.approve(rando, 123);
+    }
+
+    function testApprove_whenSenderIsOperator_thenShouldApproveAndEmitEvent() public {
+        
+    }
+
+    function testApprove_whenTokenDoesNotExist_thenShouldRevert() public {
+        givenMintedTokens();
+
+        vm.expectRevert("ERC721: invalid token ID");
+
+        token.approve(approved, 789);
+    }
 
     /*//////////////////////////////////////////////////////////////
                         Based on OZ functions, bottoms-up
