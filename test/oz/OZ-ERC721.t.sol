@@ -3,6 +3,8 @@ pragma solidity >=0.8.15;
 
 import "forge-std/Test.sol";
 
+import {IERC721Receiver} from "openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+
 import {ERC721Contract} from "../../src/oz/ERC721Contract.sol";
 
 contract ERC721Test is Test {
@@ -288,7 +290,7 @@ contract ERC721Test is Test {
         token.transferFrom(owner, address(0), 123);
     }
 
-    // NOTE another approach to porting the OZ hardhat/mocha/chai tests
+    // NOTE the below is another approach to porting the OZ hardhat/mocha/chai tests
 
     // function testTransferFrom_whenTokenIsTransferred_thenUpdateOwner() public {
     //     givenMintedTokens();
@@ -364,6 +366,8 @@ contract ERC721Test is Test {
                         Transfers via safeTransferFrom
     //////////////////////////////////////////////////////////////*/
 
+    // TODO 
+
     // function testSafeTransferFrom_shouldTransferToEOA() public {
         
     // }
@@ -372,7 +376,54 @@ contract ERC721Test is Test {
                         safeMint
     //////////////////////////////////////////////////////////////*/
 
-    //
+    // 5 Givens
+    // Safe
+    // Wrong Data
+    // Reverting
+    // Panicking
+    // Unimplemented Function
+
+    // NOTE purposefully not testing unique parts of OZ's Receiver mock, like logs
+
+    function testSafeMint_whenMintedToSafeReceiverWithData_thenShouldCallOnERC721Recieved() public {
+        address receiver = address(new ERC721Recipient());
+
+        token.safeMint(receiver, 123, '0x69');
+
+        assertEq(token.ownerOf(123), receiver);
+    }
+
+    function testSafeMint_whenMintedToSafeRecieverWithoutData_thenShouldCallOnERC721Received() public {
+        address receiver = address(new ERC721Recipient());
+
+        token.safeMint(receiver, 123);
+
+        assertEq(token.ownerOf(123), receiver);
+    }
+
+    function testSafeMint_whenMintedToWrongDataReceiver_thenShouldRevert() public {
+        address receiver = address(new WrongReturnDataERC721Recipient());
+
+        vm.expectRevert("ERC721: transfer to non ERC721Receiver implementer");
+
+        token.safeMint(receiver, 123);
+    }
+
+    function testSafeMint_whenMintedToRevertingWithMessageReceiver_thenShouldRevert() public {
+        address receiver = address(new RevertingWithMessageERC721Recipient());
+
+        vm.expectRevert(IERC721Receiver.onERC721Received.selector);
+
+        token.safeMint(receiver, 123);
+    }
+
+    function testSafeMint_whenMintedToRevertingWithoutMessageReceiver_thenShouldRevert() public {
+        address receiver = address(new RevertingWithoutMessageERC721Recipient());
+
+        vm.expectRevert("ERC721: transfer to non ERC721Receiver implementer");
+
+        token.safeMint(receiver, 123);
+    }
 
     /*//////////////////////////////////////////////////////////////
                         approve
@@ -546,4 +597,63 @@ contract ERC721Test is Test {
     // _beforeTokenTransfer
 
     // _afterTokenTransfer
+}
+
+contract ERC721Recipient is IERC721Receiver {
+    address public operator;
+    address public from;
+    uint256 public id;
+    bytes public data;
+
+    function onERC721Received(
+        address _operator,
+        address _from,
+        uint256 _id,
+        bytes calldata _data
+    ) public override returns (bytes4) {
+        operator = _operator;
+        from = _from;
+        id = _id;
+        data = _data;
+
+        return IERC721Receiver.onERC721Received.selector;
+    }
+}
+
+contract NonERC721Recipient {}
+
+contract RevertingWithMessageERC721Recipient is IERC721Receiver {
+    event log(string info);
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public override returns (bytes4) {
+        revert(string(abi.encodePacked(IERC721Receiver.onERC721Received.selector)));
+    }
+}
+contract RevertingWithoutMessageERC721Recipient is IERC721Receiver {
+    event log(string info);
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public override returns (bytes4) {
+        revert();
+    }
+}
+
+contract WrongReturnDataERC721Recipient is IERC721Receiver {
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public override returns (bytes4) {
+        return 0xDEADCAFE;
+    }
 }

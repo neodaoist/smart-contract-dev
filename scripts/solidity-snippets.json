@@ -68,12 +68,21 @@
         "description": "Add forge assert equals"
     },
 
-    "forge assert emit event": {
+    "forge assert expect emit event": {
         "prefix": "av",
         "body": [
             "vm.expectEmit(true, true, true, true);",
             "emit $1;"
         ],
-        "description": "Add forge assert emit event"
-    } 
+        "description": "Add forge assert expect emit event"
+    },
+
+    "forge assert expect revert": {
+        "prefix": "ar",
+        "body": [
+            "vm.expectRevert($1);"
+        ],
+        "description": "Add forge assert expect revert"
+    }
+    
 }
