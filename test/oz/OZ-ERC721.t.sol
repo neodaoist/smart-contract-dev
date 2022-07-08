@@ -46,7 +46,11 @@ contract ERC721Test is Test {
         vm.stopPrank();
     }
 
-    function thenTransferWasSuccessful(address from_, address to_, uint256 tokenID_) internal {
+    function thenTransferWasSuccessful(
+        address from_,
+        address to_,
+        uint256 tokenID_
+    ) internal {
         // transfers the ownership of the given token ID to the given address
         assertEq(token.ownerOf(tokenID_), to_);
 
@@ -69,7 +73,11 @@ contract ERC721Test is Test {
         assertEq(token.ownerOf(123), to);
     }
 
-    function thenTransferWasSuccessful_events(address from_, address to_, uint256 tokenID_) internal {        
+    function thenTransferWasSuccessful_events(
+        address from_,
+        address to_,
+        uint256 tokenID_
+    ) internal {
         // need to expect these logs in reverse order
 
         // emits an Approval event
@@ -85,7 +93,11 @@ contract ERC721Test is Test {
 
     // }
 
-    function shouldSafeTransferTokensByUsers(address from_, address to_, uint256 tokenID_) internal {
+    function shouldSafeTransferTokensByUsers(
+        address from_,
+        address to_,
+        uint256 tokenID_
+    ) internal {
         // When called by owner
         token.safeTransferFrom(from_, to_, tokenID_);
         thenTransferWasSuccessful(from_, to_, tokenID_);
@@ -93,7 +105,6 @@ contract ERC721Test is Test {
         // When called by approved account
         vm.prank(approved);
         token.safeTransferFrom(from_, to_, tokenID_);
-
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -197,7 +208,7 @@ contract ERC721Test is Test {
 
         thenTransferWasSuccessful(owner, to, 123);
     }
-    
+
     // NOTE unclear on zoom level — should these "whenSentToOwner" be one or multiple tests
     function testTransfer_whenSentToOwner_shouldKeepOwnershipOfToken() public {
         givenMintedTokens();
@@ -366,10 +377,10 @@ contract ERC721Test is Test {
                         Transfers via safeTransferFrom
     //////////////////////////////////////////////////////////////*/
 
-    // TODO 
+    // TODO
 
     // function testSafeTransferFrom_shouldTransferToEOA() public {
-        
+
     // }
 
     /*//////////////////////////////////////////////////////////////
@@ -388,7 +399,7 @@ contract ERC721Test is Test {
     function testSafeMint_whenMintedToSafeReceiverWithData_thenShouldCallOnERC721Recieved() public {
         address receiver = address(new ERC721Recipient());
 
-        token.safeMint(receiver, 123, '0x69');
+        token.safeMint(receiver, 123, "0x69");
 
         assertEq(token.ownerOf(123), receiver);
     }
@@ -419,6 +430,23 @@ contract ERC721Test is Test {
 
     function testSafeMint_whenMintedToRevertingWithoutMessageReceiver_thenShouldRevert() public {
         address receiver = address(new RevertingWithoutMessageERC721Recipient());
+
+        vm.expectRevert("ERC721: transfer to non ERC721Receiver implementer");
+
+        token.safeMint(receiver, 123);
+    }
+
+    // NOTE not totally understanding yet what OZ is testing here with 'to a receiver contract that panics'
+    function testSafeMint_whenMintedToPanickingReceiver_thenShouldRevert() public {
+        address receiver = address(new PanickingERC721Recipient());
+
+        vm.expectRevert(stdError.divisionError);
+
+        token.safeMint(receiver, 123);
+    }
+
+    function testSafeMint_whenMintedToNonERC721Receiver_thenShouldRevert() public {
+        address receiver = address(new NonERC721Recipient());
 
         vm.expectRevert("ERC721: transfer to non ERC721Receiver implementer");
 
@@ -486,7 +514,9 @@ contract ERC721Test is Test {
         assertEq(token.getApproved(123), approved);
     }
 
-    function testApprove_givenPriorApprovalOfDifferentAddress_whenApprovingAddress_thenShouldApproveAndEmitEvent() public {
+    function testApprove_givenPriorApprovalOfDifferentAddress_whenApprovingAddress_thenShouldApproveAndEmitEvent()
+        public
+    {
         givenMintedTokens();
         vm.prank(owner);
         token.approve(rando, 123);
@@ -530,9 +560,10 @@ contract ERC721Test is Test {
         token.approve(rando, 123);
     }
 
-    function testApprove_whenSenderIsOperator_thenShouldApproveAndEmitEvent() public {
-        
-    }
+    // TODO implement me
+    // function testApprove_whenSenderIsOperator_thenShouldApproveAndEmitEvent() public {
+
+    // }
 
     function testApprove_whenTokenDoesNotExist_thenShouldRevert() public {
         givenMintedTokens();
@@ -540,6 +571,53 @@ contract ERC721Test is Test {
         vm.expectRevert("ERC721: invalid token ID");
 
         token.approve(approved, 789);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        set approval for all
+    //////////////////////////////////////////////////////////////*/
+
+    function testSetApprovalForAll_whenSetByOwner_thenShouldApproveTheOperator() public {
+        givenMintedTokens();
+
+        vm.prank(owner);
+        token.setApprovalForAll(operator, true);
+
+        assertEq(token.isApprovedForAll(owner, operator), true);
+    }
+
+    function testSetApprovalForAll_whenSetByOwner_thenShouldEmitApprovalEvent() public {
+        givenMintedTokens();
+
+        vm.expectEmit(true, true, true, true);
+        emit ApprovalForAll(owner, operator, true);
+
+        vm.prank(owner);
+        token.setApprovalForAll(operator, true);
+    }
+
+    // TODO when the operator was set as not approved
+
+    function testSetApprovalForAll_whenUnsetByOwner_thenShouldRevokeApprovalForAll() public {
+        givenMintedTokens();
+
+        vm.startPrank(owner);
+        token.setApprovalForAll(operator, true);
+        token.setApprovalForAll(operator, false);
+        vm.stopPrank();
+
+        assertEq(token.isApprovedForAll(owner, operator), false);
+    }
+
+    // TODO when the operator was already approved
+
+    function testSetApprovalForAll_whenOperatorIsOwner_thenShouldRevert() public {
+        givenMintedTokens();
+
+        vm.expectRevert("ERC721: approve to caller");
+
+        vm.prank(owner);
+        token.setApprovalForAll(owner, true);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -634,6 +712,7 @@ contract RevertingWithMessageERC721Recipient is IERC721Receiver {
         revert(string(abi.encodePacked(IERC721Receiver.onERC721Received.selector)));
     }
 }
+
 contract RevertingWithoutMessageERC721Recipient is IERC721Receiver {
     event log(string info);
 
@@ -644,6 +723,18 @@ contract RevertingWithoutMessageERC721Recipient is IERC721Receiver {
         bytes calldata
     ) public override returns (bytes4) {
         revert();
+    }
+}
+
+contract PanickingERC721Recipient is IERC721Receiver {
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public override returns (bytes4) {
+        uint256 a = uint256(0) / uint256(0);
+        a;
     }
 }
 
