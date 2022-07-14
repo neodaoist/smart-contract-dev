@@ -43,8 +43,8 @@ contract HelloWorld {
 
     // from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol#L374
     function toUint256(bytes memory _bytes, uint256 _start) internal pure returns (uint256) {
-        require (_bytes.length >= _start + 32, "toUint256_outOfBounds");
-        
+        require(_bytes.length >= _start + 32, "toUint256_outOfBounds");
+
         uint256 temp;
 
         assembly {
