@@ -8,13 +8,22 @@ contract ForkingCheatcodesTest is Test {
     uint256 mainnetFork;
     uint256 optimismFork;
 
-    string constant MAINNET_RPC_URL = "";
-    string constant OPTIMISM_RPC_URL = "";
-    string constant ARBITRUM_RPC_URL = "";
+    uint256 contractData;
+
+    IWETH WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
+    address constant WETH_TOKEN_ADDR = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    uint256 constant mainblock = 15_151_704;
+
+    string constant MAINNET_RPC_URL = "https://mainnet.infura.io/v3/3b59d7ee7a5f4378911a8a8789911ed1";
+    string constant OPTIMISM_RPC_URL = "https://optimism-mainnet.infura.io/v3/3b59d7ee7a5f4378911a8a8789911ed1";
+    string constant ARBITRUM_RPC_URL = "https://arbitrum-mainnet.infura.io/v3/3b59d7ee7a5f4378911a8a8789911ed1";
 
     function setUp() public {
         mainnetFork = vm.createFork(MAINNET_RPC_URL);
         optimismFork = vm.createFork(OPTIMISM_RPC_URL);
+
+        contractData = 123;
     }
 
     function testForkIdDiffer() public {
@@ -65,4 +74,41 @@ contract ForkingCheatcodesTest is Test {
         assertEq(vm.activeFork(), optimismFork);
         assertEq(block.number, 456);
     }
+
+    function testPracticeDirectOnStorageSlot() public {
+        // 0x4BBa239C9cC83619228457502227D801e4738bA0
+        // 777940133568685575
+        // 0xbcfb221e9342dcd5de3d9275da6423d236f891cdb48b8b7b2034f7283cdc6058
+
+        // $ cast index address 0x4BBa239C9cC83619228457502227D801e4738bA0 3
+
+        // TODO research if cast-index accepts value_type (seems no), and consider PR to update Foundry book
+        // (https://book.getfoundry.sh/reference/cast/cast-index)
+
+        vm.selectFork(mainnetFork);
+
+        address me = 0x4BBa239C9cC83619228457502227D801e4738bA0;
+
+        assertEq(WETH.balanceOf(me), 777_940_133_568_685_575);
+
+        vm.store(
+            WETH_TOKEN_ADDR,
+            0xbcfb221e9342dcd5de3d9275da6423d236f891cdb48b8b7b2034f7283cdc6058,
+            bytes32(uint256(1337))
+        );
+
+        assertEq(WETH.balanceOf(me), 1337);
+    }
+
+    // practice with storage slot for allowance
+
+    // testCanHaveForkSpecificData
+
+    // testCanHaveContractData
+}
+
+interface IWETH {
+    function deposit() external payable;
+
+    function balanceOf(address) external view returns (uint256);
 }
