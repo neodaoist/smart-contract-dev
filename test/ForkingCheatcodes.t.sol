@@ -26,8 +26,31 @@ contract ForkingCheatcodesTest is Test {
         contractData = 123;
     }
 
+    function testBlankTest() public {
+        uint256 optimismForkId = vm.createFork(OPTIMISM_RPC_URL);
+
+        vm.rollFork(optimismForkId, 1_337_000);
+
+        vm.selectFork(optimismForkId);
+
+        assertEq(block.number, 1_337_000);
+    }
+
     function testForkIdDiffer() public {
         assert(mainnetFork != optimismFork);
+    }
+
+    function testFail_activeFork_whenNoActiveFork_shouldRevert() public {
+        vm.activeFork(); // TODO should this have a revert message to help debug a malformed test?
+    }
+
+    function testCreateForkWithBlock() public {
+        assertEq(block.number, 1);
+
+        uint256 id = vm.createFork(MAINNET_RPC_URL, 456);
+        vm.selectFork(id);
+
+        assertEq(block.number, 456);
     }
 
     function testCanSelectFork() public {
