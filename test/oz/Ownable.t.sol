@@ -68,26 +68,6 @@ contract OwnableTest is Test {
         ownable.handleOwnerBusiness();
     }
 
-    function testRenounceOwnership() public {
-        vm.expectEmit(true, true, true, true);
-        emit OwnershipTransferred(address(this), address(0));
-
-        ownable.renounceOwnership();
-
-        assertEq(ownable.owner(), address(0));
-
-        // not sure if this assert is valuable or duplicative
-        vm.expectRevert("Ownable: caller is not the owner");
-        ownable.handleOwnerBusiness();
-    }
-
-    function testRenounceOwnershipWhenCalledByNonOwnerShouldFail() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-
-        vm.prank(address(0xABCD));
-        ownable.renounceOwnership();
-    }
-
     function testTransferOwnership() public {
         vm.expectEmit(true, true, true, true);
         emit OwnershipTransferred(address(this), address(0xBABE));
@@ -126,6 +106,26 @@ contract OwnableTest is Test {
         OwnerTransferredDuringConstruction transferDuringConstruction = new OwnerTransferredDuringConstruction();
 
         assertEq(transferDuringConstruction.owner(), address(0xBABE));
+    }
+
+    function testRenounceOwnership() public {
+        vm.expectEmit(true, true, true, true);
+        emit OwnershipTransferred(address(this), address(0));
+
+        ownable.renounceOwnership();
+
+        assertEq(ownable.owner(), address(0));
+
+        // not sure if this assert is valuable or duplicative
+        vm.expectRevert("Ownable: caller is not the owner");
+        ownable.handleOwnerBusiness();
+    }
+
+    function testRenounceOwnershipWhenCalledByNonOwnerShouldFail() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xABCD));
+        ownable.renounceOwnership();
     }
 
     function testRenounceOwnershipDuringConstruction() public {

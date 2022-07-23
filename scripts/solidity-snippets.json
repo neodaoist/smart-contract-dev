@@ -20,7 +20,7 @@
         "prefix": "se",
         "body": [
             "/*//////////////////////////////////////////////////////////////",
-            "                    $1",
+            "                    ${1:title}",
             "//////////////////////////////////////////////////////////////*/"
         ],
         "description": "Add section header"
@@ -60,10 +60,18 @@
 
     // test assertions
 
+    "forge assert true": {
+        "prefix": "at",
+        "body": [
+            "assertTrue(${1:data});"
+        ],
+        "description": "Add forge assert true"
+    },
+
     "forge assert equals": {
         "prefix": "ae",
         "body": [
-            "assertEq($1, $2);"
+            "assertEq(${1:expected}, ${2:actual});"
         ],
         "description": "Add forge assert equals"
     },
@@ -72,7 +80,7 @@
         "prefix": "av",
         "body": [
             "vm.expectEmit(true, true, true, true);",
-            "emit $1;"
+            "emit ${1:event};"
         ],
         "description": "Add forge assert expect emit event"
     },
@@ -80,7 +88,7 @@
     "forge assert expect revert": {
         "prefix": "ar",
         "body": [
-            "vm.expectRevert($1);"
+            "vm.expectRevert(${1:message});"
         ],
         "description": "Add forge assert expect revert"
     }
