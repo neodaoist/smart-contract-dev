@@ -21,14 +21,14 @@ contract OwnableContract is Ownable {
     }
 }
 
-contract OwnerTransferredDuringConstruction is Ownable {
+contract OwnershipTransferredDuringConstruction is Ownable {
     //
     constructor() {
         transferOwnership(address(0xBABE));
     }
 }
 
-contract OwnerRenouncedDuringConstruction is Ownable {
+contract OwnershipRenouncedDuringConstruction is Ownable {
     //
     constructor() {
         renounceOwnership();
@@ -103,7 +103,7 @@ contract OwnableTest is Test {
         vm.expectEmit(true, true, true, true);
         emit OwnershipTransferred(address(this), address(0xBABE));
 
-        OwnerTransferredDuringConstruction transferDuringConstruction = new OwnerTransferredDuringConstruction();
+        OwnershipTransferredDuringConstruction transferDuringConstruction = new OwnershipTransferredDuringConstruction();
 
         assertEq(transferDuringConstruction.owner(), address(0xBABE));
     }
@@ -134,7 +134,7 @@ contract OwnableTest is Test {
         vm.expectEmit(true, true, true, true);
         emit OwnershipTransferred(address(this), address(0));
 
-        OwnerRenouncedDuringConstruction renounceDuringConstruction = new OwnerRenouncedDuringConstruction();
+        OwnershipRenouncedDuringConstruction renounceDuringConstruction = new OwnershipRenouncedDuringConstruction();
 
         assertEq(renounceDuringConstruction.owner(), address(0));
     }

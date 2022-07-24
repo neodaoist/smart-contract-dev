@@ -4,7 +4,6 @@ pragma solidity >=0.8.15;
 import "forge-std/Test.sol";
 
 import {Pausable} from "openzeppelin/contracts/security/Pausable.sol";
-import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 
 // event Paused
 // event Unpaused
