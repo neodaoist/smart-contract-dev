@@ -71,7 +71,7 @@
     "forge assert equals": {
         "prefix": "ae",
         "body": [
-            "assertEq(${1:expected}, ${2:actual});"
+            "assertEq(${1:actual}, ${2:expected});"
         ],
         "description": "Add forge assert equals"
     },
