@@ -4,8 +4,64 @@ pragma solidity >=0.8.15;
 import "forge-std/Test.sol";
 import {ERC721Contract} from "../src/sm/ERC721Contract.sol";
 
+contract ZoraTest is Test {
+    //
+    ReserveAuctionCoreEth zAuction;
+    ERC721Contract nft;
+
+    function setUp() public {
+        vm.createSelectFork(ROPSTEN_RPC_URL, 12673131);
+
+        zAuction = ReserveAuctionCoreEth(0xF57A73D355680Df3945Da7853A1F1F9149C7DA4D);
+
+        nft = new ERC721Contract("Handrolled NFT", "ROLLUP");
+        nft.mint(address(0xBABE), 1337);
+    }
+
+    function testHelloWorld() public {
+        vm.prank(address(0xBABE));
+        zAuction.createAuction(address(nft), 1337, 3 days, 0.1 ether, address(0xABCD), block.timestamp);
+
+        (
+            address seller,
+            uint256 reservePrice,
+            address fundsRecipient,
+            ,
+            ,
+            uint256 duration,
+            uint256 startTime,
+
+        ) = zAuction.auctionForNFT(address(nft), 1337);
+
+        assertEq(seller, address(0xBABE));
+        assertEq(reservePrice, 0.1 ether);
+        assertEq(fundsRecipient, address(0xABCD));
+        assertEq(duration, 3 days);
+        assertEq(startTime, block.timestamp);
+    }
+
+    function testCreateAuctionWhenOperator() public {
+        vm.prank(address(0xBABE));
+        nft.setApprovalForAll(address(0xABCD), true);
+
+        vm.prank(address(0xABCD));
+        zAuction.createAuction(address(nft), 1337, 3 days, 0.1 ether, address(0xABCD), block.timestamp);
+
+        (address creator, , , , , , , ) = zAuction.auctionForNFT(address(nft), 1337);
+
+        assertEq(creator, address(0xBABE));
+    }
+
+    function testCreateAuctionWhenNotOwnerOrOperatorShouldFail() public {
+        vm.expectRevert("ONLY_TOKEN_OWNER_OR_OPERATOR");
+
+        zAuction.createAuction(address(nft), 1337, 3 days, 0.1 ether, address(0xABCD), block.timestamp);
+    }
+}
+
 abstract contract ReserveAuctionCoreEth {
     //
+
     function createAuction(
         address _tokenContract,
         uint256 _tokenId,
@@ -32,6 +88,7 @@ abstract contract ReserveAuctionCoreEth {
 }
 
 struct Auction {
+    //
     address seller;
     uint96 reservePrice;
     address sellerFundsRecipient;
@@ -40,59 +97,4 @@ struct Auction {
     uint32 duration;
     uint32 startTime;
     uint32 firstBidTime;
-}
-
-contract ZoraTest is Test {
-    //
-    ReserveAuctionCoreEth zAuction;
-    ERC721Contract nft;
-
-    function setUp() public {
-        vm.createSelectFork(ROPSTEN_RPC_URL, 12673131);
-        zAuction = ReserveAuctionCoreEth(address(0xF57A73D355680Df3945Da7853A1F1F9149C7DA4D));
-        nft = new ERC721Contract("Handrolled NFT", "ROLLUP");
-    }
-
-    function testHelloWorld() public {
-        nft.mint(address(0xBABE), 1337);
-        vm.prank(address(0xBABE));
-        zAuction.createAuction(address(nft), 1337, 3 days, 0.1 ether, address(0xABCD), block.timestamp);
-
-        (
-            address creator,
-            uint256 reservePrice,
-            address fundsRecipient,
-            ,
-            ,
-            uint256 duration,
-            uint256 startTime,
-
-        ) = zAuction.auctionForNFT(address(nft), 1337);
-
-        assertEq(creator, address(0xBABE));
-        assertEq(reservePrice, 0.1 ether);
-        assertEq(fundsRecipient, address(0xABCD));
-        assertEq(duration, 3 days);
-        assertEq(startTime, block.timestamp);
-    }
-
-    function testCreateAuctionWhenOperator() public {
-        nft.mint(address(0xBABE), 1337);
-        vm.prank(address(0xBABE));
-        nft.setApprovalForAll(address(0xABCD), true);
-
-        vm.prank(address(0xABCD));
-        zAuction.createAuction(address(nft), 1337, 3 days, 0.1 ether, address(0xABCD), block.timestamp);
-
-        (address creator, , , , , , , ) = zAuction.auctionForNFT(address(nft), 1337);
-
-        assertEq(creator, address(0xBABE));
-    }
-
-    function testCreateAuctionWhenNotOwnerOrOperatorShouldFail() public {
-        nft.mint(address(0xBABE), 1337);
-
-        vm.expectRevert("ONLY_TOKEN_OWNER_OR_OPERATOR");
-        zAuction.createAuction(address(nft), 1337, 3 days, 0.1 ether, address(0xABCD), block.timestamp);
-    }
 }
