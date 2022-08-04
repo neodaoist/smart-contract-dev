@@ -10,7 +10,7 @@ contract ZoraTest is Test {
     ERC721Contract nft;
 
     function setUp() public {
-        vm.createSelectFork(ROPSTEN_RPC_URL, 12673131);
+        vm.createSelectFork("", 12673131);
 
         zAuction = ReserveAuctionCoreEth(0xF57A73D355680Df3945Da7853A1F1F9149C7DA4D);
 
