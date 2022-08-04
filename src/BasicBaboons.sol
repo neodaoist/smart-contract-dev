@@ -15,6 +15,7 @@ contract BasicBaboons is ERC721 {
     //
     using Counters for Counters.Counter;
 
+    event Withdrawal(uint256 amount);
     event MaxSupplyUpdated(uint256 newSupply);
 
     Counters.Counter internal nextId;
@@ -34,6 +35,14 @@ contract BasicBaboons is ERC721 {
         nextId.increment();
 
         _mint(msg.sender, tokenId);
+    }
+
+    /// @notice Withdraw the contract's ether balance
+    function withdraw() external {
+        uint256 amount = address(this).balance;
+        payable(msg.sender).transfer(amount);
+
+        emit Withdrawal(amount);
     }
 
     /// @notice Reduce the max supply

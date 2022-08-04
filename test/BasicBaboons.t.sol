@@ -9,6 +9,7 @@ contract BasicBaboonsTest is Test {
     //
     BasicBaboons babs;
 
+    event Withdrawal(uint256 amount);
     event MaxSupplyUpdated(uint256 newSupply);
 
     function setUp() public {
@@ -19,6 +20,10 @@ contract BasicBaboonsTest is Test {
         assertEq(babs.name(), "Basic Baboons");
         assertEq(babs.symbol(), "BBB");
     }
+
+    /*//////////////////////////////////////////////////////////////
+                        Minting
+    //////////////////////////////////////////////////////////////*/
 
     function testMint() public {
         babs.mint{value: 0.05 ether}();
@@ -52,6 +57,32 @@ contract BasicBaboonsTest is Test {
         vm.expectRevert("Max supply already reached");
         babs.mint{value: 0.05 ether}();
     }
+
+    /*//////////////////////////////////////////////////////////////
+                        Withdrawing
+    //////////////////////////////////////////////////////////////*/
+
+    function testWithdraw() public {
+        assertEq(address(babs).balance, 0 ether);
+        assertEq(address(0xBABE).balance, 0 ether);
+
+        babs.mint{value: 0.05 ether}();
+        babs.mint{value: 0.05 ether}();
+        babs.mint{value: 0.05 ether}();
+        babs.mint{value: 0.05 ether}();
+
+        assertEq(address(babs).balance, 0.2 ether);
+
+        vm.prank(address(0xBABE));
+        babs.withdraw();
+
+        assertEq(address(babs).balance, 0 ether);
+        assertEq(address(0xBABE).balance, 0.2 ether);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        Managing Supply
+    //////////////////////////////////////////////////////////////*/
 
     function testReduceSupply() public {
         assertEq(babs.maxSupply(), 1000);
