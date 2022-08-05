@@ -10,6 +10,8 @@ contract BasicBaboons is ERC721 {
 
     event Withdrawal(uint256 amount);
     event MaxSupplyUpdated(uint256 newSupply);
+    event URIUpdated(string uri);
+    event URIFrozen();
 
     Counters.Counter internal nextId;
 
@@ -17,6 +19,10 @@ contract BasicBaboons is ERC721 {
 
     uint8 internal immutable teamAllocation;
     address internal immutable teamMultisig;
+    
+    string internal baseURI = "https://originaluri.xyz/";
+
+    bool internal uriFrozen;
     
     /// @param _teamMultisig Multisig address of the project team
     /// @param _teamAllocation Number of tokens to be minted to the project team
@@ -69,5 +75,25 @@ contract BasicBaboons is ERC721 {
     /// @return Total tokens minted
     function totalSupply() public view returns (uint256) {
         return nextId.current() - 1;
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
+    }
+
+    function setURI(string memory _uri) public {
+        require(!uriFrozen, "URI is frozen and cannot be updated");
+
+        baseURI = _uri;
+
+        emit URIUpdated(_uri);
+    }
+
+    function freezeURI() public {
+        require(!uriFrozen, "URI already frozen");
+
+        uriFrozen = true;
+
+        emit URIFrozen();
     }
 }

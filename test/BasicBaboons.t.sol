@@ -11,6 +11,8 @@ contract BasicBaboonsTest is Test {
 
     event Withdrawal(uint256 amount);
     event MaxSupplyUpdated(uint256 newSupply);
+    event URIUpdated(string uri);
+    event URIFrozen();
 
     uint16 INITIAL_MAX_SUPPLY = 1000;
 
@@ -134,5 +136,41 @@ contract BasicBaboonsTest is Test {
         for(uint256 i = 1; i < TEAM_ALLOCATION; i++) {
             assertEq(babs.ownerOf(i), TEAM_MULTISIG);
         }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        Metadata and URI
+    //////////////////////////////////////////////////////////////*/
+
+    function testSetURI() public {
+        vm.expectEmit(true, true, true, true);
+        emit URIUpdated("https://newuri.xyz/");
+
+        babs.setURI("https://newuri.xyz/");
+
+        assertEq(babs.tokenURI(1), "https://newuri.xyz/1");
+        assertEq(babs.tokenURI(2), "https://newuri.xyz/2");
+        assertEq(babs.tokenURI(3), "https://newuri.xyz/3");
+    }
+
+    function testFreezeURI() public {
+        babs.setURI("https://newuri.xyz/");
+
+        vm.expectEmit(true, true, true, true);
+        emit URIFrozen();
+
+        babs.freezeURI();
+
+        vm.expectRevert("URI is frozen and cannot be updated");
+
+        babs.setURI("https://neweruri.xyz/");
+    }
+
+    function testFreezeURIWhenAlreadyFrozenShouldFail() public {
+        babs.freezeURI();
+
+        vm.expectRevert("URI already frozen");
+
+        babs.freezeURI();
     }
 }
