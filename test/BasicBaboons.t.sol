@@ -19,8 +19,10 @@ contract BasicBaboonsTest is Test {
     uint8 TEAM_ALLOCATION = 20;
     address TEAM_MULTISIG = address(0xDEADBEEFCAFE);
 
+    bytes32 PROVENANCE_HASH = keccak256("provenance hash"); // "052eb7eae2cf5b439673d338604e84923dd90f809b90538d19f4e78e45abc1cb"
+
     function setUp() public {
-        babs = new BasicBaboons(TEAM_MULTISIG, TEAM_ALLOCATION);
+        babs = new BasicBaboons(TEAM_MULTISIG, TEAM_ALLOCATION, PROVENANCE_HASH);
     }
 
     function testIsERC721() public {
@@ -172,5 +174,9 @@ contract BasicBaboonsTest is Test {
         vm.expectRevert("URI already frozen");
 
         babs.freezeURI();
+    }
+
+    function testProvenanceHash() public {
+        assertEq(babs.provenanceHash(), PROVENANCE_HASH);
     }
 }

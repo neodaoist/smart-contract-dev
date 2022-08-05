@@ -17,6 +17,8 @@ contract BasicBaboons is ERC721 {
 
     uint256 public maxSupply = 1000;
 
+    bytes32 public immutable provenanceHash;
+
     uint8 internal immutable teamAllocation;
     address internal immutable teamMultisig;
     
@@ -26,11 +28,13 @@ contract BasicBaboons is ERC721 {
     
     /// @param _teamMultisig Multisig address of the project team
     /// @param _teamAllocation Number of tokens to be minted to the project team
-    constructor (address _teamMultisig, uint8 _teamAllocation) ERC721("Basic Baboons", "BBB") public {
+    constructor (address _teamMultisig, uint8 _teamAllocation, bytes32 _provenanceHash) ERC721("Basic Baboons", "BBB") public {
         nextId.increment(); // start at 1
 
         teamMultisig = _teamMultisig;
         teamAllocation = _teamAllocation;
+        provenanceHash = _provenanceHash;
+        
         mintTeamAllocation();
     }
 
