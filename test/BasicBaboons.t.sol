@@ -12,8 +12,13 @@ contract BasicBaboonsTest is Test {
     event Withdrawal(uint256 amount);
     event MaxSupplyUpdated(uint256 newSupply);
 
+    uint16 INITIAL_MAX_SUPPLY = 1000;
+
+    uint8 TEAM_ALLOCATION = 20;
+    address TEAM_MULTISIG = address(0xDEADBEEFCAFE);
+
     function setUp() public {
-        babs = new BasicBaboons();
+        babs = new BasicBaboons(TEAM_MULTISIG, TEAM_ALLOCATION);
     }
 
     function testIsERC721() public {
@@ -32,10 +37,10 @@ contract BasicBaboonsTest is Test {
         babs.mint{value: 0.05 ether}();
 
         assertEq(babs.balanceOf(address(this)), 2);
-        assertEq(babs.ownerOf(1), address(this));
-        assertEq(babs.ownerOf(2), address(this));
+        assertEq(babs.ownerOf(TEAM_ALLOCATION + 1), address(this));
+        assertEq(babs.ownerOf(TEAM_ALLOCATION + 2), address(this));
         assertEq(babs.balanceOf(address(0xBABE)), 1);
-        assertEq(babs.ownerOf(3), address(0xBABE));
+        assertEq(babs.ownerOf(TEAM_ALLOCATION + 3), address(0xBABE));
     }
 
     function testMintWhenNotEnoughEtherSentShouldRevert() public {
@@ -50,7 +55,7 @@ contract BasicBaboonsTest is Test {
     }
 
     function testMintWhenMaxSupplyReachedShouldRevert() public {
-        for (uint256 i = 0; i < 1000; i++) {
+        for (uint256 i = 0; i < INITIAL_MAX_SUPPLY - TEAM_ALLOCATION; i++) {
             babs.mint{value: 0.05 ether}();
         }
 
@@ -73,6 +78,9 @@ contract BasicBaboonsTest is Test {
 
         assertEq(address(babs).balance, 0.2 ether);
 
+        vm.expectEmit(true, true, true, true);
+        emit Withdrawal(0.2 ether);
+
         vm.prank(address(0xBABE));
         babs.withdraw();
 
@@ -85,7 +93,7 @@ contract BasicBaboonsTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testReduceSupply() public {
-        assertEq(babs.maxSupply(), 1000);
+        assertEq(babs.maxSupply(), INITIAL_MAX_SUPPLY);
 
         vm.expectEmit(true, true, true, true);
         emit MaxSupplyUpdated(420);
@@ -101,7 +109,7 @@ contract BasicBaboonsTest is Test {
         assertEq(babs.maxSupply(), 999);
 
         vm.expectRevert("New supply must be < previous max supply and >= total supply");
-        babs.reduceSupply(1000);
+        babs.reduceSupply(INITIAL_MAX_SUPPLY);
     }
 
     function testReduceSupplyWhenLessThanCurrentlyMintedShouldRevert() public {
@@ -110,10 +118,21 @@ contract BasicBaboonsTest is Test {
         }
 
         // no revert
-        babs.reduceSupply(42);
-        assertEq(babs.maxSupply(), 42);
+        babs.reduceSupply(42 + TEAM_ALLOCATION);
+        assertEq(babs.maxSupply(), 42 + TEAM_ALLOCATION);
 
         vm.expectRevert("New supply must be < previous max supply and >= total supply");
-        babs.reduceSupply(41);
+        babs.reduceSupply(41 + TEAM_ALLOCATION);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        Team Allocation
+    //////////////////////////////////////////////////////////////*/
+
+    function testTeamAllocation() public {
+        assertEq(babs.balanceOf(TEAM_MULTISIG), TEAM_ALLOCATION);
+        for(uint256 i = 1; i < TEAM_ALLOCATION; i++) {
+            assertEq(babs.ownerOf(i), TEAM_MULTISIG);
+        }
     }
 }

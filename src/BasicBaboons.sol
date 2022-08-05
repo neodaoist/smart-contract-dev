@@ -3,13 +3,6 @@ pragma solidity >=0.8.15;
 
 import {ERC721} from "openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Counters} from "openzeppelin/contracts/utils/Counters.sol";
-// import "openzeppelin-contracts/utils/Strings.sol";
-// import "openzeppelin-contracts/access/Ownable.sol";
-
-// error MintPriceNotPaid();
-// error MaxSupply();
-// error NonExistentTokenURI();
-// error WithdrawTransfer();
 
 contract BasicBaboons is ERC721 {
     //
@@ -21,9 +14,25 @@ contract BasicBaboons is ERC721 {
     Counters.Counter internal nextId;
 
     uint256 public maxSupply = 1000;
+
+    uint8 internal immutable teamAllocation;
+    address internal immutable teamMultisig;
     
-    constructor () ERC721("Basic Baboons", "BBB") public {
+    /// @param _teamMultisig Multisig address of the project team
+    /// @param _teamAllocation Number of tokens to be minted to the project team
+    constructor (address _teamMultisig, uint8 _teamAllocation) ERC721("Basic Baboons", "BBB") public {
         nextId.increment(); // start at 1
+
+        teamMultisig = _teamMultisig;
+        teamAllocation = _teamAllocation;
+        mintTeamAllocation();
+    }
+
+    function mintTeamAllocation() internal {
+        for (uint256 i = 0; i < teamAllocation; i++) {
+            _mint(teamMultisig, nextId.current());
+            nextId.increment();
+        }
     }
 
     /// @notice Mint an NFT to the sender
