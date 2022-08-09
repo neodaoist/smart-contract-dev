@@ -3,8 +3,9 @@ pragma solidity >=0.8.15;
 
 import {ERC721} from "openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Counters} from "openzeppelin/contracts/utils/Counters.sol";
+import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 
-contract BasicBaboons is ERC721 {
+contract BasicBaboons is ERC721, Ownable {
     //
     using Counters for Counters.Counter;
 
@@ -29,11 +30,13 @@ contract BasicBaboons is ERC721 {
     /// @param _teamMultisig Multisig address of the project team
     /// @param _teamAllocation Number of tokens to be minted to the project team
     constructor (address _teamMultisig, uint8 _teamAllocation, bytes32 _provenanceHash) ERC721("Basic Baboons", "BBB") public {
-        nextId.increment(); // start at 1
+        nextId.increment(); // start at 1        
 
         teamMultisig = _teamMultisig;
         teamAllocation = _teamAllocation;
         provenanceHash = _provenanceHash;
+
+        transferOwnership(teamMultisig);
         
         mintTeamAllocation();
     }
@@ -57,7 +60,7 @@ contract BasicBaboons is ERC721 {
     }
 
     /// @notice Withdraw the contract's ether balance
-    function withdraw() external {
+    function withdraw() external onlyOwner {
         uint256 amount = address(this).balance;
         payable(msg.sender).transfer(amount);
 
@@ -66,7 +69,7 @@ contract BasicBaboons is ERC721 {
 
     /// @notice Reduce the max supply
     /// @param _newSupply New max supply
-    function reduceSupply(uint256 _newSupply) external {
+    function reduceSupply(uint256 _newSupply) external onlyOwner {
         require(_newSupply < maxSupply && _newSupply >= totalSupply(),
             "New supply must be < previous max supply and >= total supply");
 
@@ -85,7 +88,7 @@ contract BasicBaboons is ERC721 {
         return baseURI;
     }
 
-    function setURI(string memory _uri) public {
+    function setURI(string memory _uri) public onlyOwner {
         require(!uriFrozen, "URI is frozen and cannot be updated");
 
         baseURI = _uri;
@@ -93,7 +96,7 @@ contract BasicBaboons is ERC721 {
         emit URIUpdated(_uri);
     }
 
-    function freezeURI() public {
+    function freezeURI() public onlyOwner {
         require(!uriFrozen, "URI already frozen");
 
         uriFrozen = true;

@@ -73,7 +73,7 @@ contract BasicBaboonsTest is Test {
 
     function testWithdraw() public {
         assertEq(address(babs).balance, 0 ether);
-        assertEq(address(0xBABE).balance, 0 ether);
+        assertEq(TEAM_MULTISIG.balance, 0 ether);
 
         babs.mint{value: 0.05 ether}();
         babs.mint{value: 0.05 ether}();
@@ -85,11 +85,11 @@ contract BasicBaboonsTest is Test {
         vm.expectEmit(true, true, true, true);
         emit Withdrawal(0.2 ether);
 
-        vm.prank(address(0xBABE));
+        vm.prank(TEAM_MULTISIG);
         babs.withdraw();
 
         assertEq(address(babs).balance, 0 ether);
-        assertEq(address(0xBABE).balance, 0.2 ether);
+        assertEq(TEAM_MULTISIG.balance, 0.2 ether);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -102,12 +102,15 @@ contract BasicBaboonsTest is Test {
         vm.expectEmit(true, true, true, true);
         emit MaxSupplyUpdated(420);
 
+        vm.prank(TEAM_MULTISIG);
         babs.reduceSupply(420);
 
         assertEq(babs.maxSupply(), 420);
     }
 
-    function testReduceSupplyWhenMoreThanOrEqualToPreviousMaxSupplyShouldRevert() public {
+    function testReduceSupplyWhenGreaterThanOrEqualToPreviousMaxSupplyShouldRevert() public {
+        vm.startPrank(TEAM_MULTISIG);
+        
         // no revert
         babs.reduceSupply(999);
         assertEq(babs.maxSupply(), 999);
@@ -120,6 +123,8 @@ contract BasicBaboonsTest is Test {
         for (uint256 i = 0; i < 42; i++) {
             babs.mint{value: 0.05 ether}();
         }
+
+        vm.startPrank(TEAM_MULTISIG);
 
         // no revert
         babs.reduceSupply(42 + TEAM_ALLOCATION);
@@ -148,6 +153,7 @@ contract BasicBaboonsTest is Test {
         vm.expectEmit(true, true, true, true);
         emit URIUpdated("https://newuri.xyz/");
 
+        vm.prank(TEAM_MULTISIG);
         babs.setURI("https://newuri.xyz/");
 
         assertEq(babs.tokenURI(1), "https://newuri.xyz/1");
@@ -156,27 +162,64 @@ contract BasicBaboonsTest is Test {
     }
 
     function testFreezeURI() public {
+        vm.prank(TEAM_MULTISIG);
         babs.setURI("https://newuri.xyz/");
 
         vm.expectEmit(true, true, true, true);
         emit URIFrozen();
 
+        vm.prank(TEAM_MULTISIG);
         babs.freezeURI();
 
         vm.expectRevert("URI is frozen and cannot be updated");
 
+        vm.prank(TEAM_MULTISIG);
         babs.setURI("https://neweruri.xyz/");
     }
 
     function testFreezeURIWhenAlreadyFrozenShouldFail() public {
+        vm.prank(TEAM_MULTISIG);
         babs.freezeURI();
 
         vm.expectRevert("URI already frozen");
 
+        vm.prank(TEAM_MULTISIG);
         babs.freezeURI();
     }
 
     function testProvenanceHash() public {
         assertEq(babs.provenanceHash(), PROVENANCE_HASH);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        Access Control
+    //////////////////////////////////////////////////////////////*/
+
+    function test_Withdraw_WhenNotOwnerShouldFail() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xABCD)); // from random EOA
+        babs.withdraw();
+    }
+
+    function test_ReduceSupply_WhenNotOwnerShouldFail() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xABCD)); // from random EOA
+        babs.reduceSupply(999);
+    }
+
+    function test_SetURI_WhenNotOwnerShouldFail() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xABCD)); // from random EOA
+        babs.setURI("hey there");
+    }
+
+    function test_FreezeURI_WhenNotOwnerShouldFail() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xABCD)); // from random EOA
+        babs.freezeURI();
     }
 }
