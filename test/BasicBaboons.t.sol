@@ -21,8 +21,26 @@ contract BasicBaboonsTest is Test {
 
     bytes32 PROVENANCE_HASH = keccak256("provenance hash"); // "052eb7eae2cf5b439673d338604e84923dd90f809b90538d19f4e78e45abc1cb"
 
+    address[] ALLOWLIST = [
+        address(0xF1),
+        address(0xF2),
+        address(0xF3),
+        address(0xF4),
+        address(0xF5),
+        address(0xF6),
+        address(0xF7),
+        address(0xF8),
+        address(0xF9),
+        address(0xF10),
+        address(0xF11),
+        address(0xF12),
+        address(0xF13),
+        address(0xF14),
+        address(0xF15)
+    ];
+
     function setUp() public {
-        babs = new BasicBaboons(TEAM_MULTISIG, TEAM_ALLOCATION, PROVENANCE_HASH);
+        babs = new BasicBaboons(TEAM_MULTISIG, TEAM_ALLOCATION, ALLOWLIST, PROVENANCE_HASH);
     }
 
     function testIsERC721() public {
@@ -191,6 +209,8 @@ contract BasicBaboonsTest is Test {
         assertEq(babs.provenanceHash(), PROVENANCE_HASH);
     }
 
+    // TODO add JSON tests
+
     /*//////////////////////////////////////////////////////////////
                         Access Control
     //////////////////////////////////////////////////////////////*/
@@ -221,5 +241,31 @@ contract BasicBaboonsTest is Test {
 
         vm.prank(address(0xABCD)); // from random EOA
         babs.freezeURI();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        Allowlist
+    //////////////////////////////////////////////////////////////*/
+
+    function test_MintAllowlist() public {
+        for (uint256 i = 0; i < ALLOWLIST.length; i++) {
+            address allowed = ALLOWLIST[i];
+
+            assertEq(babs.allowlisted(allowed), true);
+            assertEq(babs.balanceOf(allowed), 0);
+
+            vm.prank(allowed);
+            babs.mintAllowlist();
+
+            assertEq(babs.allowlisted(allowed), false);
+            assertEq(babs.balanceOf(allowed), 1);
+        }
+    }
+
+    function test_MintAllowlist_WhenNotAllowlistedShouldFail() public {
+        vm.expectRevert("Address not allowlisted");
+        
+        vm.prank(address(0xABCD)); // from random EOA
+        babs.mintAllowlist();
     }
 }

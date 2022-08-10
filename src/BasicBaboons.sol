@@ -22,6 +22,8 @@ contract BasicBaboons is ERC721, Ownable {
 
     uint8 internal immutable teamAllocation;
     address internal immutable teamMultisig;
+
+    mapping(address => bool) public allowlisted;
     
     string internal baseURI = "https://originaluri.xyz/";
 
@@ -29,7 +31,9 @@ contract BasicBaboons is ERC721, Ownable {
     
     /// @param _teamMultisig Multisig address of the project team
     /// @param _teamAllocation Number of tokens to be minted to the project team
-    constructor (address _teamMultisig, uint8 _teamAllocation, bytes32 _provenanceHash) ERC721("Basic Baboons", "BBB") public {
+    /// @param _allowlist Addresses to allowlist
+    /// @param _provenanceHash 32-byte hash of the metadata
+    constructor (address _teamMultisig, uint8 _teamAllocation, address[] memory _allowlist, bytes32 _provenanceHash) ERC721("Basic Baboons", "BBB") public {
         nextId.increment(); // start at 1        
 
         teamMultisig = _teamMultisig;
@@ -37,26 +41,43 @@ contract BasicBaboons is ERC721, Ownable {
         provenanceHash = _provenanceHash;
 
         transferOwnership(teamMultisig);
-        
+        setupAllowlist(_allowlist);
         mintTeamAllocation();
+    }
+
+    function setupAllowlist(address[] memory _allowlist) internal {
+        for (uint256 i = 0; i < _allowlist.length; i++) {
+            allowlisted[_allowlist[i]] = true;
+        }
     }
 
     function mintTeamAllocation() internal {
         for (uint256 i = 0; i < teamAllocation; i++) {
-            _mint(teamMultisig, nextId.current());
-            nextId.increment();
+            _mint(teamMultisig);
         }
     }
 
     /// @notice Mint an NFT to the sender
     function mint() external payable {
-        require(msg.value == 0.05 ether, "Mint price of 0.05 ETH not paid");
+        require(msg.value == 0.05 ether, "Mint price of 0.05 ETH not paid");        
+        require(nextId.current() <= maxSupply, "Max supply already reached");
+
+        _mint(msg.sender);
+    }
+
+    /// @notice Mint an NFT to an allowlisted address
+    function mintAllowlist() external {
+        require(allowlisted[msg.sender], "Address not allowlisted");
+
+        allowlisted[msg.sender] = false;
+
+        _mint(msg.sender);
+    }
+
+    function _mint(address _address) internal {
         uint256 tokenId = nextId.current();
-        require(tokenId <= maxSupply, "Max supply already reached");
-
         nextId.increment();
-
-        _mint(msg.sender, tokenId);
+        _mint(_address, tokenId);
     }
 
     /// @notice Withdraw the contract's ether balance
