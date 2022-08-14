@@ -15,6 +15,7 @@ contract BasicBaboonsTest is Test {
     event URIFrozen();
 
     uint16 INITIAL_MAX_SUPPLY = 1000;
+    uint256 MINT_PRICE = 0.05 ether;
 
     uint8 TEAM_ALLOCATION = 20;
     address TEAM_MULTISIG = address(0xDEADBEEFCAFE);
@@ -53,10 +54,10 @@ contract BasicBaboonsTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testMint() public {
-        babs.mint{value: 0.05 ether}();
-        babs.mint{value: 0.05 ether}();
+        babs.mint{value: MINT_PRICE}();
+        babs.mint{value: MINT_PRICE}();
         hoax(address(0xBABE), 1 ether);
-        babs.mint{value: 0.05 ether}();
+        babs.mint{value: MINT_PRICE}();
 
         assertEq(babs.balanceOf(address(this)), 2);
         assertEq(babs.ownerOf(TEAM_ALLOCATION + 1), address(this));
@@ -78,11 +79,11 @@ contract BasicBaboonsTest is Test {
 
     function testMintWhenMaxSupplyReachedShouldRevert() public {
         for (uint256 i = 0; i < INITIAL_MAX_SUPPLY - TEAM_ALLOCATION; i++) {
-            babs.mint{value: 0.05 ether}();
+            babs.mint{value: MINT_PRICE}();
         }
 
         vm.expectRevert("Max supply already reached");
-        babs.mint{value: 0.05 ether}();
+        babs.mint{value: MINT_PRICE}();
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -93,10 +94,10 @@ contract BasicBaboonsTest is Test {
         assertEq(address(babs).balance, 0 ether);
         assertEq(TEAM_MULTISIG.balance, 0 ether);
 
-        babs.mint{value: 0.05 ether}();
-        babs.mint{value: 0.05 ether}();
-        babs.mint{value: 0.05 ether}();
-        babs.mint{value: 0.05 ether}();
+        babs.mint{value: MINT_PRICE}();
+        babs.mint{value: MINT_PRICE}();
+        babs.mint{value: MINT_PRICE}();
+        babs.mint{value: MINT_PRICE}();
 
         assertEq(address(babs).balance, 0.2 ether);
 
@@ -139,7 +140,7 @@ contract BasicBaboonsTest is Test {
 
     function testReduceSupplyWhenLessThanCurrentlyMintedShouldRevert() public {
         for (uint256 i = 0; i < 42; i++) {
-            babs.mint{value: 0.05 ether}();
+            babs.mint{value: MINT_PRICE}();
         }
 
         vm.startPrank(TEAM_MULTISIG);
@@ -267,5 +268,35 @@ contract BasicBaboonsTest is Test {
         
         vm.prank(address(0xABCD)); // from random EOA
         babs.mintAllowlist();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        Royalties
+    //////////////////////////////////////////////////////////////*/
+
+    // should pay royalty on secondary sales
+    // should be able to set new royalty %
+    // should not be able to set new royalty % higher than max
+    // should not be able to set new royalty % if not owner
+
+    function testRoyalty() public {
+        vm.deal(address(0xA), 1 ether);
+        vm.deal(address(0xB), 1 ether);
+        vm.deal(TEAM_MULTISIG, 1 ether);
+        uint256 contractBalance = address(babs).balance;
+
+        uint256 tokenId = TEAM_ALLOCATION + 1;
+
+        vm.startPrank(address(0xA));
+        babs.mint{value: MINT_PRICE}();
+
+        assertEq(address(babs).balance, contractBalance + MINT_PRICE);
+        assertEq(address(0xA).balance, 1 ether - MINT_PRICE);
+
+        assertEq(babs.ownerOf(tokenId), address(0xA));
+        babs.safeTransferFrom(address(0xA), address(0xB), tokenId);
+        assertEq(babs.ownerOf(tokenId), address(0xB));
+
+        // assert what is returned from royaltyInfo
     }
 }

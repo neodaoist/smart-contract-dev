@@ -17,6 +17,7 @@ contract BasicBaboons is ERC721, Ownable {
     Counters.Counter internal nextId;
 
     uint256 public maxSupply = 1000;
+    uint256 internal constant MINT_PRICE = 0.05 ether;
 
     bytes32 public immutable provenanceHash;
 
@@ -59,7 +60,7 @@ contract BasicBaboons is ERC721, Ownable {
 
     /// @notice Mint an NFT to the sender
     function mint() external payable {
-        require(msg.value == 0.05 ether, "Mint price of 0.05 ETH not paid");        
+        require(msg.value == MINT_PRICE, "Mint price of 0.05 ETH not paid");        
         require(nextId.current() <= maxSupply, "Max supply already reached");
 
         _mint(msg.sender);
