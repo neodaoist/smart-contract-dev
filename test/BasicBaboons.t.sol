@@ -40,6 +40,9 @@ contract BasicBaboonsTest is Test {
         address(0xF15)
     ];
 
+    uint96 INITIAL_ROYALTY_PERCENTAGE_IN_BIPS = 500;
+    uint96 MAX_ROYALTY_PERCENTAGE_IN_BIPS = 1000;
+
     function setUp() public {
         babs = new BasicBaboons(TEAM_MULTISIG, TEAM_ALLOCATION, ALLOWLIST, PROVENANCE_HASH);
     }
@@ -71,10 +74,10 @@ contract BasicBaboonsTest is Test {
         babs.mint();
 
         vm.expectRevert("Mint price of 0.05 ETH not paid");
-        babs.mint{value: 0.04 ether}();
+        babs.mint{value: MINT_PRICE - 0.01 ether}();
 
         vm.expectRevert("Mint price of 0.05 ETH not paid");
-        babs.mint{value: 0.06 ether}();
+        babs.mint{value: MINT_PRICE + 0.01 ether}();
     }
 
     function testMintWhenMaxSupplyReachedShouldRevert() public {
@@ -99,16 +102,16 @@ contract BasicBaboonsTest is Test {
         babs.mint{value: MINT_PRICE}();
         babs.mint{value: MINT_PRICE}();
 
-        assertEq(address(babs).balance, 0.2 ether);
+        assertEq(address(babs).balance, MINT_PRICE * 4);
 
         vm.expectEmit(true, true, true, true);
-        emit Withdrawal(0.2 ether);
+        emit Withdrawal(MINT_PRICE * 4);
 
         vm.prank(TEAM_MULTISIG);
         babs.withdraw();
 
         assertEq(address(babs).balance, 0 ether);
-        assertEq(TEAM_MULTISIG.balance, 0.2 ether);
+        assertEq(TEAM_MULTISIG.balance, MINT_PRICE * 4);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -244,6 +247,13 @@ contract BasicBaboonsTest is Test {
         babs.freezeURI();
     }
 
+    function test_SetNewRoyalty_WhenNotOwnerShouldFail() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xABCD)); // from random EOA
+        babs.setNewRoyalty(MAX_ROYALTY_PERCENTAGE_IN_BIPS);
+    }
+
     /*//////////////////////////////////////////////////////////////
                         Allowlist
     //////////////////////////////////////////////////////////////*/
@@ -274,29 +284,54 @@ contract BasicBaboonsTest is Test {
                         Royalties
     //////////////////////////////////////////////////////////////*/
 
-    // should pay royalty on secondary sales
-    // should be able to set new royalty %
-    // should not be able to set new royalty % higher than max
-    // should not be able to set new royalty % if not owner
+    function testRoyalty(uint256 tokenId, uint256 salePrice) public {
+        tokenId = bound(tokenId, 1, TEAM_ALLOCATION);
+        salePrice = bound(salePrice, 0.01 ether, 100 ether);
 
-    function testRoyalty() public {
-        vm.deal(address(0xA), 1 ether);
-        vm.deal(address(0xB), 1 ether);
-        vm.deal(TEAM_MULTISIG, 1 ether);
-        uint256 contractBalance = address(babs).balance;
-
-        uint256 tokenId = TEAM_ALLOCATION + 1;
-
-        vm.startPrank(address(0xA));
-        babs.mint{value: MINT_PRICE}();
-
-        assertEq(address(babs).balance, contractBalance + MINT_PRICE);
-        assertEq(address(0xA).balance, 1 ether - MINT_PRICE);
-
-        assertEq(babs.ownerOf(tokenId), address(0xA));
-        babs.safeTransferFrom(address(0xA), address(0xB), tokenId);
-        assertEq(babs.ownerOf(tokenId), address(0xB));
-
-        // assert what is returned from royaltyInfo
+        (address receiver, uint256 royaltyAmount) = babs.royaltyInfo(tokenId, salePrice);
+        
+        assertEq(receiver, TEAM_MULTISIG);
+        assertEq(royaltyAmount, (salePrice * INITIAL_ROYALTY_PERCENTAGE_IN_BIPS) / 10_000);
     }
+
+    function testSetNewRoyalty() public {
+        vm.prank(TEAM_MULTISIG);
+        babs.setNewRoyalty(MAX_ROYALTY_PERCENTAGE_IN_BIPS);
+
+        (address receiver, uint256 royaltyAmount) = babs.royaltyInfo(1, 1 ether);
+
+        assertEq(receiver, TEAM_MULTISIG);
+        assertEq(royaltyAmount, (1 ether * MAX_ROYALTY_PERCENTAGE_IN_BIPS) / 10_000);
+    }
+
+    function testSetNewRoyaltyWhenGreaterThanMaxAllowedShouldFail() public {
+        vm.expectRevert("New royalty percentage must not exceed 10%");
+        
+        vm.prank(TEAM_MULTISIG);
+        babs.setNewRoyalty(MAX_ROYALTY_PERCENTAGE_IN_BIPS + 1);
+    }
+
+    // NOTE rn this is more a test of NFT transferring than royalty calculation
+    // TODO study how Seaport and Zora v3 support EIP2981 and honor the royalty payment itself
+
+    // function testRoyalty() public {
+    //     vm.deal(address(0xA), 1 ether);
+    //     vm.deal(address(0xB), 1 ether);
+    //     vm.deal(TEAM_MULTISIG, 1 ether);
+    //     uint256 contractBalance = address(babs).balance;
+
+    //     uint256 tokenId = TEAM_ALLOCATION + 1;
+
+    //     vm.startPrank(address(0xA));
+    //     babs.mint{value: MINT_PRICE}();
+
+    //     assertEq(address(babs).balance, contractBalance + MINT_PRICE);
+    //     assertEq(address(0xA).balance, 1 ether - MINT_PRICE);
+
+    //     assertEq(babs.ownerOf(tokenId), address(0xA));
+    //     babs.safeTransferFrom(address(0xA), address(0xB), tokenId);
+    //     assertEq(babs.ownerOf(tokenId), address(0xB));
+
+    //     // assert what is returned from royaltyInfo
+    // }    
 }

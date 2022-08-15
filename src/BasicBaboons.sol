@@ -2,10 +2,11 @@
 pragma solidity >=0.8.15;
 
 import {ERC721} from "openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721Royalty} from "openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import {Counters} from "openzeppelin/contracts/utils/Counters.sol";
 import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 
-contract BasicBaboons is ERC721, Ownable {
+contract BasicBaboons is ERC721Royalty, Ownable {
     //
     using Counters for Counters.Counter;
 
@@ -13,6 +14,7 @@ contract BasicBaboons is ERC721, Ownable {
     event MaxSupplyUpdated(uint256 newSupply);
     event URIUpdated(string uri);
     event URIFrozen();
+    event RoyaltyUpdated(address indexed receiver, uint96 royaltyPercentageInBips);
 
     Counters.Counter internal nextId;
 
@@ -25,6 +27,9 @@ contract BasicBaboons is ERC721, Ownable {
     address internal immutable teamMultisig;
 
     mapping(address => bool) public allowlisted;
+
+    uint96 INITIAL_ROYALTY_PERCENTAGE_IN_BIPS = 500;
+    uint96 MAX_ROYALTY_PERCENTAGE_IN_BIPS = 1000;
     
     string internal baseURI = "https://originaluri.xyz/";
 
@@ -44,6 +49,7 @@ contract BasicBaboons is ERC721, Ownable {
         transferOwnership(teamMultisig);
         setupAllowlist(_allowlist);
         mintTeamAllocation();
+        _setDefaultRoyalty(teamMultisig, INITIAL_ROYALTY_PERCENTAGE_IN_BIPS);
     }
 
     function setupAllowlist(address[] memory _allowlist) internal {
@@ -110,6 +116,8 @@ contract BasicBaboons is ERC721, Ownable {
         return baseURI;
     }
 
+    /// @notice
+    /// @param
     function setURI(string memory _uri) public onlyOwner {
         require(!uriFrozen, "URI is frozen and cannot be updated");
 
@@ -118,11 +126,23 @@ contract BasicBaboons is ERC721, Ownable {
         emit URIUpdated(_uri);
     }
 
+    /// @notice 
     function freezeURI() public onlyOwner {
         require(!uriFrozen, "URI already frozen");
 
         uriFrozen = true;
 
         emit URIFrozen();
+    }
+
+    /// @notice Set a new royalty
+    /// @param _newRoyaltyPercentageInBips The new royalty percentage in basis points,
+    /// must not exceed 10% (1000 bips)
+    function setNewRoyalty(uint96 _newRoyaltyPercentageInBips) external onlyOwner {
+        require(_newRoyaltyPercentageInBips <= MAX_ROYALTY_PERCENTAGE_IN_BIPS, "New royalty percentage must not exceed 10%");
+
+        _setDefaultRoyalty(owner(), _newRoyaltyPercentageInBips);
+
+        emit RoyaltyUpdated(owner(), _newRoyaltyPercentageInBips);
     }
 }
