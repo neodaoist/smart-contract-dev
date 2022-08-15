@@ -42,7 +42,7 @@ contract BasicBaboonsTest is Test {
         babs = new BasicBaboons(TEAM_MULTISIG, TEAM_ALLOCATION, ALLOWLIST, PROVENANCE_HASH);
     }
 
-    function testIsERC721() public {
+    function test_ERC721InvariantMetadata() public {
         assertEq(babs.name(), "Basic Baboons");
         assertEq(babs.symbol(), "BBB");
     }
@@ -51,7 +51,7 @@ contract BasicBaboonsTest is Test {
                         Minting
     //////////////////////////////////////////////////////////////*/
 
-    function testMint() public {
+    function test_Mint() public {
         babs.mint{value: MINT_PRICE}();
         babs.mint{value: MINT_PRICE}();
         hoax(address(0xBABE), 1 ether);
@@ -64,7 +64,7 @@ contract BasicBaboonsTest is Test {
         assertEq(babs.ownerOf(TEAM_ALLOCATION + 3), address(0xBABE));
     }
 
-    function testMintWhenNotEnoughEtherSentShouldRevert() public {
+    function test_Mint_WhenNotEnoughEtherSent_ShouldRevert() public {
         vm.expectRevert("Mint price of 0.05 ETH not paid");
         babs.mint();
 
@@ -75,7 +75,7 @@ contract BasicBaboonsTest is Test {
         babs.mint{value: MINT_PRICE + 0.01 ether}();
     }
 
-    function testMintWhenMaxSupplyReachedShouldRevert() public {
+    function test_Mint_WhenMaxSupplyReached_ShouldRevert() public {
         for (uint256 i = 0; i < INITIAL_MAX_SUPPLY - TEAM_ALLOCATION; i++) {
             babs.mint{value: MINT_PRICE}();
         }
@@ -88,7 +88,7 @@ contract BasicBaboonsTest is Test {
                         Withdrawing
     //////////////////////////////////////////////////////////////*/
 
-    function testWithdraw() public {
+    function test_Withdraw() public {
         assertEq(address(babs).balance, 0 ether);
         assertEq(TEAM_MULTISIG.balance, 0 ether);
 
@@ -113,7 +113,7 @@ contract BasicBaboonsTest is Test {
                         Managing Supply
     //////////////////////////////////////////////////////////////*/
 
-    function testReduceSupply() public {
+    function test_ReduceSupply() public {
         assertEq(babs.maxSupply(), INITIAL_MAX_SUPPLY);
 
         vm.expectEmit(true, true, true, true);
@@ -125,7 +125,7 @@ contract BasicBaboonsTest is Test {
         assertEq(babs.maxSupply(), 420);
     }
 
-    function testReduceSupplyWhenGreaterThanOrEqualToPreviousMaxSupplyShouldRevert() public {
+    function test_ReduceSupply_WhenGreaterThanOrEqualToPreviousMaxSupply_ShouldRevert() public {
         vm.startPrank(TEAM_MULTISIG);
         
         // no revert
@@ -136,7 +136,7 @@ contract BasicBaboonsTest is Test {
         babs.reduceSupply(INITIAL_MAX_SUPPLY);
     }
 
-    function testReduceSupplyWhenLessThanCurrentlyMintedShouldRevert() public {
+    function test_ReduceSupply_WhenLessThanCurrentlyMinted_ShouldRevert() public {
         for (uint256 i = 0; i < 42; i++) {
             babs.mint{value: MINT_PRICE}();
         }
@@ -155,7 +155,7 @@ contract BasicBaboonsTest is Test {
                         Team Allocation
     //////////////////////////////////////////////////////////////*/
 
-    function testTeamAllocation() public {
+    function test_TeamAllocation() public {
         assertEq(babs.balanceOf(TEAM_MULTISIG), TEAM_ALLOCATION);
         for(uint256 i = 1; i < TEAM_ALLOCATION; i++) {
             assertEq(babs.ownerOf(i), TEAM_MULTISIG);
@@ -166,7 +166,7 @@ contract BasicBaboonsTest is Test {
                         Metadata and URI
     //////////////////////////////////////////////////////////////*/
 
-    function testSetURI() public {
+    function test_SetURI() public {
         vm.expectEmit(true, true, true, true);
         emit BasicBaboonEvents.URIUpdated("https://newuri.xyz/");
 
@@ -178,7 +178,7 @@ contract BasicBaboonsTest is Test {
         assertEq(babs.tokenURI(3), "https://newuri.xyz/3");
     }
 
-    function testFreezeURI() public {
+    function test_FreezeURI() public {
         vm.prank(TEAM_MULTISIG);
         babs.setURI("https://newuri.xyz/");
 
@@ -194,7 +194,7 @@ contract BasicBaboonsTest is Test {
         babs.setURI("https://neweruri.xyz/");
     }
 
-    function testFreezeURIWhenAlreadyFrozenShouldFail() public {
+    function test_FreezeURI_WhenAlreadyFrozen_ShouldRevert() public {
         vm.prank(TEAM_MULTISIG);
         babs.freezeURI();
 
@@ -204,7 +204,7 @@ contract BasicBaboonsTest is Test {
         babs.freezeURI();
     }
 
-    function testProvenanceHash() public {
+    function test_ProvenanceHash() public {
         assertEq(babs.provenanceHash(), PROVENANCE_HASH);
     }
 
@@ -214,35 +214,35 @@ contract BasicBaboonsTest is Test {
                         Access Control
     //////////////////////////////////////////////////////////////*/
 
-    function test_Withdraw_WhenNotOwnerShouldFail() public {
+    function test_Withdraw_WhenNotOwner_ShouldRevert() public {
         vm.expectRevert("Ownable: caller is not the owner");
 
         vm.prank(address(0xABCD)); // from random EOA
         babs.withdraw();
     }
 
-    function test_ReduceSupply_WhenNotOwnerShouldFail() public {
+    function test_ReduceSupply_WhenNotOwner_ShouldRevert() public {
         vm.expectRevert("Ownable: caller is not the owner");
 
         vm.prank(address(0xABCD)); // from random EOA
         babs.reduceSupply(999);
     }
 
-    function test_SetURI_WhenNotOwnerShouldFail() public {
+    function test_SetURI_WhenNotOwner_ShouldRevert() public {
         vm.expectRevert("Ownable: caller is not the owner");
 
         vm.prank(address(0xABCD)); // from random EOA
         babs.setURI("hey there");
     }
 
-    function test_FreezeURI_WhenNotOwnerShouldFail() public {
+    function test_FreezeURI_WhenNotOwner_ShouldRevert() public {
         vm.expectRevert("Ownable: caller is not the owner");
 
         vm.prank(address(0xABCD)); // from random EOA
         babs.freezeURI();
     }
 
-    function test_SetNewRoyalty_WhenNotOwnerShouldFail() public {
+    function test_SetNewRoyalty_WhenNotOwner_ShouldRevert() public {
         vm.expectRevert("Ownable: caller is not the owner");
 
         vm.prank(address(0xABCD)); // from random EOA
@@ -253,7 +253,7 @@ contract BasicBaboonsTest is Test {
                         Allowlist
     //////////////////////////////////////////////////////////////*/
 
-    function test_MintAllowlist() public {
+    function test_MintFromAllowlist() public {
         for (uint256 i = 0; i < ALLOWLIST.length; i++) {
             address allowed = ALLOWLIST[i];
 
@@ -268,7 +268,7 @@ contract BasicBaboonsTest is Test {
         }
     }
 
-    function test_MintAllowlist_WhenNotAllowlistedShouldFail() public {
+    function test_MintFromAllowlist_WhenNotAllowlisted_ShouldRevert() public {
         vm.expectRevert("Address not allowlisted");
         
         vm.prank(address(0xABCD)); // from random EOA
@@ -279,7 +279,7 @@ contract BasicBaboonsTest is Test {
                         Royalties
     //////////////////////////////////////////////////////////////*/
 
-    function testRoyalty(uint256 tokenId, uint256 salePrice) public {
+    function test_Royalty(uint256 tokenId, uint256 salePrice) public {
         tokenId = bound(tokenId, 1, TEAM_ALLOCATION);
         salePrice = bound(salePrice, 0.01 ether, 100 ether);
 
@@ -289,7 +289,7 @@ contract BasicBaboonsTest is Test {
         assertEq(royaltyAmount, (salePrice * INITIAL_ROYALTY_PERCENTAGE_IN_BIPS) / 10_000);
     }
 
-    function testSetNewRoyalty() public {
+    function test_SetNewRoyalty() public {
         vm.expectEmit(true, true, true, true);
         emit BasicBaboonEvents.RoyaltyUpdated(TEAM_MULTISIG, MAX_ROYALTY_PERCENTAGE_IN_BIPS);
 
@@ -302,7 +302,7 @@ contract BasicBaboonsTest is Test {
         assertEq(royaltyAmount, (1 ether * MAX_ROYALTY_PERCENTAGE_IN_BIPS) / 10_000);
     }
 
-    function testSetNewRoyaltyWhenGreaterThanMaxAllowedShouldFail() public {
+    function test_SetNewRoyalty_WhenGreaterThanMaxAllowed_ShouldRevert() public {
         vm.expectRevert("New royalty percentage must not exceed 10%");
         
         vm.prank(TEAM_MULTISIG);
