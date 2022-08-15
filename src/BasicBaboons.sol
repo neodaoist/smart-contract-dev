@@ -6,15 +6,17 @@ import {ERC721Royalty} from "openzeppelin/contracts/token/ERC721/extensions/ERC7
 import {Counters} from "openzeppelin/contracts/utils/Counters.sol";
 import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 
-contract BasicBaboons is ERC721Royalty, Ownable {
-    //
-    using Counters for Counters.Counter;
-
+library BasicBaboonEvents {
     event Withdrawal(uint256 amount);
     event MaxSupplyUpdated(uint256 newSupply);
     event URIUpdated(string uri);
     event URIFrozen();
     event RoyaltyUpdated(address indexed receiver, uint96 royaltyPercentageInBips);
+}
+
+contract BasicBaboons is ERC721Royalty, Ownable {
+    //
+    using Counters for Counters.Counter;
 
     Counters.Counter internal nextId;
 
@@ -92,7 +94,7 @@ contract BasicBaboons is ERC721Royalty, Ownable {
         uint256 amount = address(this).balance;
         payable(msg.sender).transfer(amount);
 
-        emit Withdrawal(amount);
+        emit BasicBaboonEvents.Withdrawal(amount);
     }
 
     /// @notice Reduce the max supply
@@ -103,7 +105,7 @@ contract BasicBaboons is ERC721Royalty, Ownable {
 
         maxSupply = _newSupply;
 
-        emit MaxSupplyUpdated(_newSupply);
+        emit BasicBaboonEvents.MaxSupplyUpdated(_newSupply);
     }
 
     /// @notice Retrieve the total number of tokens minted
@@ -123,7 +125,7 @@ contract BasicBaboons is ERC721Royalty, Ownable {
 
         baseURI = _uri;
 
-        emit URIUpdated(_uri);
+        emit BasicBaboonEvents.URIUpdated(_uri);
     }
 
     /// @notice 
@@ -132,7 +134,7 @@ contract BasicBaboons is ERC721Royalty, Ownable {
 
         uriFrozen = true;
 
-        emit URIFrozen();
+        emit BasicBaboonEvents.URIFrozen();
     }
 
     /// @notice Set a new royalty
@@ -143,6 +145,6 @@ contract BasicBaboons is ERC721Royalty, Ownable {
 
         _setDefaultRoyalty(owner(), _newRoyaltyPercentageInBips);
 
-        emit RoyaltyUpdated(owner(), _newRoyaltyPercentageInBips);
+        emit BasicBaboonEvents.RoyaltyUpdated(owner(), _newRoyaltyPercentageInBips);
     }
 }

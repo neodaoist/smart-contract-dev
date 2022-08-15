@@ -3,17 +3,11 @@ pragma solidity >=0.8.15;
 
 import "forge-std/Test.sol";
 
-import {BasicBaboons} from "../src/BasicBaboons.sol";
+import "../src/BasicBaboons.sol";
 
 contract BasicBaboonsTest is Test {
     //
     BasicBaboons babs;
-
-    event Withdrawal(uint256 amount);
-    event MaxSupplyUpdated(uint256 newSupply);
-    event URIUpdated(string uri);
-    event URIFrozen();
-    event RoyaltyUpdated(address indexed receiver, uint96 royaltyPercentageInBips);
 
     uint16 INITIAL_MAX_SUPPLY = 1000;
     uint256 MINT_PRICE = 0.05 ether;
@@ -106,7 +100,7 @@ contract BasicBaboonsTest is Test {
         assertEq(address(babs).balance, MINT_PRICE * 4);
 
         vm.expectEmit(true, true, true, true);
-        emit Withdrawal(MINT_PRICE * 4);
+        emit BasicBaboonEvents.Withdrawal(MINT_PRICE * 4);
 
         vm.prank(TEAM_MULTISIG);
         babs.withdraw();
@@ -123,7 +117,7 @@ contract BasicBaboonsTest is Test {
         assertEq(babs.maxSupply(), INITIAL_MAX_SUPPLY);
 
         vm.expectEmit(true, true, true, true);
-        emit MaxSupplyUpdated(420);
+        emit BasicBaboonEvents.MaxSupplyUpdated(420);
 
         vm.prank(TEAM_MULTISIG);
         babs.reduceSupply(420);
@@ -174,7 +168,7 @@ contract BasicBaboonsTest is Test {
 
     function testSetURI() public {
         vm.expectEmit(true, true, true, true);
-        emit URIUpdated("https://newuri.xyz/");
+        emit BasicBaboonEvents.URIUpdated("https://newuri.xyz/");
 
         vm.prank(TEAM_MULTISIG);
         babs.setURI("https://newuri.xyz/");
@@ -189,7 +183,7 @@ contract BasicBaboonsTest is Test {
         babs.setURI("https://newuri.xyz/");
 
         vm.expectEmit(true, true, true, true);
-        emit URIFrozen();
+        emit BasicBaboonEvents.URIFrozen();
 
         vm.prank(TEAM_MULTISIG);
         babs.freezeURI();
@@ -297,7 +291,7 @@ contract BasicBaboonsTest is Test {
 
     function testSetNewRoyalty() public {
         vm.expectEmit(true, true, true, true);
-        emit RoyaltyUpdated(TEAM_MULTISIG, MAX_ROYALTY_PERCENTAGE_IN_BIPS);
+        emit BasicBaboonEvents.RoyaltyUpdated(TEAM_MULTISIG, MAX_ROYALTY_PERCENTAGE_IN_BIPS);
 
         vm.prank(TEAM_MULTISIG);
         babs.setNewRoyalty(MAX_ROYALTY_PERCENTAGE_IN_BIPS);
