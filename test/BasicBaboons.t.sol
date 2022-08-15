@@ -13,6 +13,7 @@ contract BasicBaboonsTest is Test {
     event MaxSupplyUpdated(uint256 newSupply);
     event URIUpdated(string uri);
     event URIFrozen();
+    event RoyaltyUpdated(address indexed receiver, uint96 royaltyPercentageInBips);
 
     uint16 INITIAL_MAX_SUPPLY = 1000;
     uint256 MINT_PRICE = 0.05 ether;
@@ -295,6 +296,9 @@ contract BasicBaboonsTest is Test {
     }
 
     function testSetNewRoyalty() public {
+        vm.expectEmit(true, true, true, true);
+        emit RoyaltyUpdated(TEAM_MULTISIG, MAX_ROYALTY_PERCENTAGE_IN_BIPS);
+
         vm.prank(TEAM_MULTISIG);
         babs.setNewRoyalty(MAX_ROYALTY_PERCENTAGE_IN_BIPS);
 
