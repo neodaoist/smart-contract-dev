@@ -38,6 +38,16 @@
 
     // test fixtures
 
+    "setUp function": {
+        "prefix": "su",
+        "body": [
+            "function setUp() public {",
+            "    $0",
+            "}"
+        ],
+        "description": "Add setUp function"
+    },
+
     "forge test": {
         "prefix": "ft",
         "body": [
