@@ -36,6 +36,14 @@
         "description": "Add function definition"
     },
 
+    "require statement": {
+        "prefix": "re",
+        "body": [
+            "require($1, \"$2\");$0"
+        ],
+        "description": "Add require statement"
+    },
+
     // test fixtures
 
     "setUp function": {
