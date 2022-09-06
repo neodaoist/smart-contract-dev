@@ -41,4 +41,11 @@ contract BitsAndBytesTest is Test {
         emit log_bytes(packed);
         emit log_bytes32(keccak256(packed));
     }
+
+    function testBigBites() public {
+        bytes32 one = bytes32(hex"01");
+        bytes32 two = bytes32(hex"02");
+
+        emit log_bytes(abi.encodePacked(one, two));
+    }
 }

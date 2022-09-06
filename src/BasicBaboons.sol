@@ -52,13 +52,7 @@ contract BasicBaboons is ERC721Royalty, Ownable {
     /// @param _teamAllocation Number of tokens to be minted to the project team
     /// @param _allowlist Addresses to allowlist
     /// @param _provenanceHash 32-byte hash of the metadata
-    constructor(
-        address _teamMultisig,
-        uint8 _teamAllocation,
-        address[] memory _allowlist,
-        bytes32 _provenanceHash
-    )
-        public
+    constructor(address _teamMultisig, uint8 _teamAllocation, address[] memory _allowlist, bytes32 _provenanceHash)
         ERC721("Basic Baboons", "BBB")
     {
         nextId.increment(); // start at tokenId 1
@@ -167,8 +161,7 @@ contract BasicBaboons is ERC721Royalty, Ownable {
     /// must not exceed 10% (1000 bips)
     function setNewRoyalty(uint96 _newRoyaltyPercentageInBips) external onlyOwner {
         require(
-            _newRoyaltyPercentageInBips <= MAX_ROYALTY_PERCENTAGE_IN_BIPS,
-            "New royalty percentage must not exceed 10%"
+            _newRoyaltyPercentageInBips <= MAX_ROYALTY_PERCENTAGE_IN_BIPS, "New royalty percentage must not exceed 10%"
         );
 
         _setDefaultRoyalty(owner(), _newRoyaltyPercentageInBips);
