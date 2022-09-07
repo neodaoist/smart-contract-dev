@@ -10,6 +10,10 @@ contract XYZTest is Test {
     function setUp() public {
         xyz = new XYZ();
     }
+
+    function test() public {
+        assertTrue(true);
+    }
 }
 
 contract XYZ {
