@@ -128,6 +128,30 @@ contract ForkingCheatcodesTest is Test {
     // testCanHaveForkSpecificData
 
     // testCanHaveContractData
+
+    function test_warpFork() public {
+        assertEq(block.timestamp, 1);
+        vm.warp(2_000_000_000);
+        assertEq(block.timestamp, 2_000_000_000);
+
+        vm.selectFork(mainnetFork);
+
+        emit log_uint(block.timestamp);
+        vm.warp(2_000_000_000);
+        assertEq(block.timestamp, 2_000_000_000);
+    }
+
+    function test_rollFork() public {
+        assertEq(block.number, 1);
+        vm.roll(123);
+        assertEq(block.number, 123);
+
+        vm.selectFork(mainnetFork);
+
+        emit log_uint(block.number);
+        vm.roll(456); // doesn't have to rollFork
+        assertEq(block.number, 456);
+    }
 }
 
 interface IWETH {
