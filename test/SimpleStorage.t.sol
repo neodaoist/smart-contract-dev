@@ -2,34 +2,55 @@
 pragma solidity >=0.8.15;
 
 import {Test} from "forge-std/Test.sol";
-import {SimpleStorage} from "../src/SimpleStorage.sol";
+import {SimpleStorage2} from "../src/SimpleStorage.sol";
 
-contract SimpleStorageTest is Test {
+contract SimpleStorage2Test is Test {
     //
-    SimpleStorage ss;
+    SimpleStorage2 ss;
+
+    address user = address(0xCAFE);
+
+    event NumberSet(address indexed setter, uint8 newNumber);
 
     function setUp() public {
-        ss = new SimpleStorage();
+        ss = new SimpleStorage2();
     }
 
-    function testSimpleStorageWhenSingle() public {
-        ss.set(123);
+    function test_set() public {
+        vm.expectEmit(true, true, true, true);
+        emit NumberSet(user, 1);
 
-        assertEq(ss.get(), 123);
+        vm.prank(user);
+        ss.set(1);
+
+        assertEq(ss.get(), 1);
     }
 
-    function testSimpleStorageWhenMultiple() public {
-        ss.set(123);
+    function test_setMultiple() public {
+        vm.startPrank(user);
 
-        assertEq(ss.get(), 123);
+        vm.expectEmit(true, true, true, true);
+        emit NumberSet(user, 1);
 
-        ss.set(456);
+        ss.set(1);
 
-        assertEq(ss.get(), 456);
+        assertEq(ss.get(), 1);
 
-        ss.set(789);
-        ss.set(123);
+        vm.expectEmit(true, true, true, true);
+        emit NumberSet(user, 2);
 
-        assertEq(ss.get(), 123);
+        ss.set(2);
+        
+        assertEq(ss.get(), 2);
+
+        vm.expectEmit(true, true, true, true);
+        emit NumberSet(user, 3);
+        vm.expectEmit(true, true, true, true);
+        emit NumberSet(user, 1);
+
+        ss.set(3);
+        ss.set(1);
+
+        assertEq(ss.get(), 1);
     }
 }

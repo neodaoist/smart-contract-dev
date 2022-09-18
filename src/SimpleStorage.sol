@@ -1,15 +1,18 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.8.15;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
 
-contract SimpleStorage {
+contract SimpleStorage2 {
     //
-    uint256 storedData;
+    event NumberSet(address indexed setter, uint8 newNumber);
 
-    function set(uint256 x_) public {
-        storedData = x_;
+    uint8 private number = 1;
+
+    function set(uint8 _number) external {
+        number = _number;
+        emit NumberSet(msg.sender, number);
     }
 
-    function get() public view returns (uint256) {
-        return storedData;
+    function get() external view returns (uint8) {
+        return number;
     }
 }
