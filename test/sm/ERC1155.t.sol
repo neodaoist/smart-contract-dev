@@ -192,10 +192,10 @@ contract ERC1155Test is Test {
         assertEq(token.balanceOf(to, 1341), 300);
     }
 
-    function testFailBurnWhenInsufficientBalance() public {
+    function testBurnWhenInsufficientBalanceShouldFail() public {
         token.mint(address(0xBABE), 1337, 40, "");
 
-        //vm.expectRevert("Arithmetic over/underflow"); // TODO research if this is possible
+        vm.expectRevert(stdError.arithmeticError);
 
         token.burn(address(0xBABE), 1337, 100);
     }

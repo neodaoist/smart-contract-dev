@@ -118,13 +118,15 @@ contract ERC20Test is Test {
         token.transferFrom(from, address(0xBABE), 1e18);
     }
 
-    function testFailTransferFromInsufficientBalance() public {
+    function testTransferFromInsufficientBalanceShouldFail() public {
         address from = address(0xABCD);
 
         token.mint(from, 0.9e18);
 
         vm.prank(from);
         token.approve(address(this), 1e18);
+
+        vm.expectRevert(stdError.arithmeticError);
 
         token.transferFrom(from, address(0xBABE), 1e18);
     }

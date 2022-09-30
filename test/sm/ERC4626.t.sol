@@ -16,6 +16,34 @@ contract ERC4626Test is Test {
         vault = new ERC4626Contract(underlying, "Mock Token Vault", "vwTKN");
     }
 
+    // Events
+    // Deposit
+    // Withdraw
+
+    // Views
+    // function asset() public view returns (address)
+    // function totalAssets() public view returns (uint256)
+    // totalSupply
+    // balanceOf
+    // function convertToShares(uint256 assets) public view returns (uint256 shares)
+    // function convertToAssets(uint256 shares) public view returns (uint256 assets)
+    // maxDeposit
+    // previewDeposit
+    // maxMint
+    // previewMint
+    // maxWithdraw
+    // previewWithdraw
+    // maxRedeem
+    // previewRedeem
+
+    // Transactions
+    // deposit
+    // mint
+    // withdraw
+    // redeem
+
+    // 16 Tests
+
     /*//////////////////////////////////////////////////////////////
                         Unit Tests
     //////////////////////////////////////////////////////////////*/
