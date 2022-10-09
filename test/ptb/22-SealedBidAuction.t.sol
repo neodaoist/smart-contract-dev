@@ -47,8 +47,8 @@ contract SealedBidAuctionTest is Test {
         assertEq(auction.tokenId(), 1);
         assertEq(auction.reservePrice(), 1 ether);
 
-        assertEq(auction.endOfBidding(), block.timestamp + 2 days);
-        assertEq(auction.endOfRevealing(), block.timestamp + 2 days + 1 days);
+        assertEq(auction.endOfBidPhase(), block.timestamp + 2 days);
+        assertEq(auction.endOfRevealPhase(), block.timestamp + 2 days + 1 days);
     }
 
     function test_placeBid() public {
@@ -63,7 +63,7 @@ contract SealedBidAuctionTest is Test {
     }
 
     function test_placeBid_whenAfterBiddingPeriod_shouldRevert() public {
-        vm.warp(block.timestamp + 2 days + 1 seconds);
+        vm.warp(block.timestamp + 2 days);
 
         bytes32 sealedBid = genSealedBid(1 ether, bidder1nonce);
 
@@ -121,7 +121,7 @@ contract SealedBidAuctionTest is Test {
         vm.prank(bidder2);
         auction.placeBid{value: 1.5 ether}(sealedBid2);
 
-        vm.warp(block.timestamp + 2 days + 1 seconds);
+        vm.warp(block.timestamp + 2 days);
 
         vm.prank(bidder1);
         auction.reveal(1 ether, bidder1nonce);
@@ -142,7 +142,7 @@ contract SealedBidAuctionTest is Test {
         assertEq(auction.balanceOf(bidder2), 0 ether);
     }
 
-    // TODO add tests to exercise obfuscated bids behavior
+    // TODO add tests to exercise obfuscated bids behavior during reveal phase
 
     function test_reveal_whenOutsideRevealingPeriod_shouldRevert() public {
         vm.expectRevert("SBA: can only reveal bid during reveal phase");
@@ -164,7 +164,7 @@ contract SealedBidAuctionTest is Test {
         vm.prank(bidder1);
         auction.placeBid{value: 1 ether}(sealedBid);
 
-        vm.warp(block.timestamp + 2 days + 1 seconds);
+        vm.warp(block.timestamp + 2 days);
 
         vm.expectRevert("SBA: revealed bid does not match sealed bid");
 
@@ -183,7 +183,7 @@ contract SealedBidAuctionTest is Test {
         vm.prank(bidder1);
         auction.placeBid{value: 1 ether}(sealedBid);
 
-        vm.warp(block.timestamp + 2 days + 1 seconds);
+        vm.warp(block.timestamp + 2 days);
 
         vm.expectRevert("SBA: revealed bid is less than the reserve price");
 
@@ -197,7 +197,7 @@ contract SealedBidAuctionTest is Test {
         vm.prank(bidder1);
         auction.placeBid{value: 1 ether}(sealedBid);
 
-        vm.warp(block.timestamp + 2 days + 1 seconds);
+        vm.warp(block.timestamp + 2 days);
 
         vm.expectRevert("SBA: sent value is less than the bid amount");
 
@@ -205,7 +205,166 @@ contract SealedBidAuctionTest is Test {
         auction.reveal(1.1 ether, bidder1nonce);
     }
 
-    // TODO withdraw
+    function test_withdraw_whenNotWinningBidder() public {
+        bytes32 sealedBid1 = genSealedBid(1 ether, bidder1nonce);
+        bytes32 sealedBid2 = genSealedBid(1.5 ether, bidder2nonce);
+
+        vm.prank(bidder1);
+        auction.placeBid{value: 1 ether}(sealedBid1);
+        vm.prank(bidder2);
+        auction.placeBid{value: 1.5 ether}(sealedBid2);
+
+        vm.warp(block.timestamp + 2 days);
+
+        vm.prank(bidder1);
+        auction.reveal(1 ether, bidder1nonce);
+        vm.prank(bidder2);
+        auction.reveal(1.5 ether, bidder2nonce);
+
+        // precondition checks
+        assertEq(address(auction).balance, 2.5 ether);
+        assertEq(bidder1.balance, 9 ether);
+        assertEq(bidder2.balance, 8.5 ether);
+        assertEq(auction.balanceOf(seller), 1.5 ether);
+        assertEq(auction.balanceOf(bidder1), 1 ether);
+        assertEq(auction.balanceOf(bidder2), 0 ether);
+
+        vm.warp(block.timestamp + 1 days);
+
+        vm.prank(bidder1);
+        auction.withdraw();
+
+        assertEq(address(auction).balance, 1.5 ether);
+        assertEq(bidder1.balance, 10 ether);
+        assertEq(bidder2.balance, 8.5 ether); // no change
+        assertEq(auction.balanceOf(seller), 1.5 ether); // no change
+        assertEq(auction.balanceOf(bidder1), 0 ether);
+        assertEq(auction.balanceOf(bidder2), 0 ether); // no change
+    }
+
+    function test_withdraw_whenSentExtraValueAsWinningBidder() public {
+        bytes32 sealedBid1 = genSealedBid(1 ether, bidder1nonce);
+        bytes32 sealedBid2 = genSealedBid(1.5 ether, bidder2nonce);
+
+        vm.prank(bidder1);
+        auction.placeBid{value: 1 ether}(sealedBid1);
+        vm.prank(bidder2);
+        auction.placeBid{value: 2 ether}(sealedBid2);
+
+        vm.warp(block.timestamp + 2 days);
+
+        vm.prank(bidder1);
+        auction.reveal(1 ether, bidder1nonce);
+        vm.prank(bidder2);
+        auction.reveal(1.5 ether, bidder2nonce);
+
+        // precondition checks
+        assertEq(address(auction).balance, 3 ether);
+        assertEq(bidder1.balance, 9 ether);
+        assertEq(bidder2.balance, 8 ether);
+        assertEq(auction.balanceOf(seller), 1.5 ether);
+        assertEq(auction.balanceOf(bidder1), 1 ether);
+        assertEq(auction.balanceOf(bidder2), 0.5 ether);
+
+        vm.warp(block.timestamp + 1 days);
+
+        vm.prank(bidder2);
+        auction.withdraw();
+
+        assertEq(address(auction).balance, 2.5 ether); // 1.5 ether bidder2's winning bid + 1 ether bidder1's losing bid
+        assertEq(bidder1.balance, 9 ether); // no change
+        assertEq(bidder2.balance, 8.5 ether); // withdrew extra 0.5 ether, above the winning bid of 1.5 ether
+        assertEq(auction.balanceOf(seller), 1.5 ether); // no change
+        assertEq(auction.balanceOf(bidder1), 1 ether); // no change
+        assertEq(auction.balanceOf(bidder2), 0 ether); 
+    }
+
+    function test_withdraw_whenWinningBidAsSeller() public {
+        bytes32 sealedBid1 = genSealedBid(1 ether, bidder1nonce);
+        bytes32 sealedBid2 = genSealedBid(1.5 ether, bidder2nonce);
+
+        vm.prank(bidder1);
+        auction.placeBid{value: 1 ether}(sealedBid1);
+        vm.prank(bidder2);
+        auction.placeBid{value: 1.5 ether}(sealedBid2);
+
+        vm.warp(block.timestamp + 2 days);
+
+        vm.prank(bidder1);
+        auction.reveal(1 ether, bidder1nonce);
+        vm.prank(bidder2);
+        auction.reveal(1.5 ether, bidder2nonce);
+
+        // precondition checks
+        assertEq(address(auction).balance, 2.5 ether);
+        assertEq(seller.balance, 0 ether);
+        assertEq(bidder1.balance, 9 ether);
+        assertEq(bidder2.balance, 8.5 ether);
+        assertEq(auction.balanceOf(seller), 1.5 ether);
+        assertEq(auction.balanceOf(bidder1), 1 ether);
+        assertEq(auction.balanceOf(bidder2), 0 ether);
+
+        vm.warp(block.timestamp + 1 days);
+
+        vm.prank(seller);
+        auction.withdraw();
+
+        assertEq(address(auction).balance, 1 ether); // only bidder1's losing bid remains in the contract
+        assertEq(seller.balance, 1.5 ether);
+        assertEq(bidder1.balance, 9 ether); // no change
+        assertEq(bidder2.balance, 8.5 ether); // no change
+        assertEq(auction.balanceOf(seller), 0 ether);
+        assertEq(auction.balanceOf(bidder1), 1 ether); // no change
+        assertEq(auction.balanceOf(bidder2), 0 ether); 
+    }
+
+    function test_withdraw_whenBeforeEndOfRevealPhase_shouldRevert() public {
+        bytes32 sealedBid1 = genSealedBid(1 ether, bidder1nonce);
+        bytes32 sealedBid2 = genSealedBid(1.5 ether, bidder2nonce);
+
+        vm.prank(bidder1);
+        auction.placeBid{value: 1 ether}(sealedBid1);
+        vm.prank(bidder2);
+        auction.placeBid{value: 1.5 ether}(sealedBid2);
+
+        vm.warp(block.timestamp + 2 days);
+
+        vm.prank(bidder1);
+        auction.reveal(1 ether, bidder1nonce);
+        vm.prank(bidder2);
+        auction.reveal(1.5 ether, bidder2nonce);
+
+        vm.expectRevert("SBA: cannot withdraw before end of reveal phase");
+
+        vm.prank(bidder1);
+        auction.withdraw();
+    }
+
+    function test_withdraw_whenNoBalanceToWithdraw_shouldRevert() public {
+        bytes32 sealedBid1 = genSealedBid(1 ether, bidder1nonce);
+        bytes32 sealedBid2 = genSealedBid(1.5 ether, bidder2nonce);
+
+        vm.prank(bidder1);
+        auction.placeBid{value: 1 ether}(sealedBid1);
+        vm.prank(bidder2);
+        auction.placeBid{value: 1.5 ether}(sealedBid2);
+
+        vm.warp(block.timestamp + 2 days);
+
+        vm.prank(bidder1);
+        auction.reveal(1 ether, bidder1nonce);
+        vm.prank(bidder2);
+        auction.reveal(1.5 ether, bidder2nonce);
+
+        vm.warp(block.timestamp + 1 days);
+
+        // because bidder2 is the current high bidder
+        vm.expectRevert("SBA: no balance available to withdraw");
+
+        vm.prank(bidder2);
+        auction.withdraw();
+    }
+
     // TODO claim
     // TODO failure to reveal sad paths
 
@@ -226,8 +385,8 @@ contract SealedBidAuction {
     uint256 public tokenId;
     uint256 public reservePrice;
 
-    uint256 public endOfBidding;
-    uint256 public endOfRevealing;
+    uint256 public endOfBidPhase;
+    uint256 public endOfRevealPhase;
 
     mapping(address => uint256) public balanceOf;
     mapping(address => bytes32) public sealedBidOf;
@@ -239,22 +398,22 @@ contract SealedBidAuction {
         address _tokenContract,
         uint256 _tokenId,
         uint256 _reservePrice,
-        uint256 biddingPeriod,
-        uint256 revealingPeriod
+        uint256 bidPhaseLengthInDays,
+        uint256 revealPhaseLengthInDays
     ) {
         tokenContract = _tokenContract;
         tokenId = _tokenId;
         reservePrice = _reservePrice;
 
-        endOfBidding = block.timestamp + biddingPeriod;
-        endOfRevealing = endOfBidding + revealingPeriod;
+        endOfBidPhase = block.timestamp + bidPhaseLengthInDays;
+        endOfRevealPhase = endOfBidPhase + revealPhaseLengthInDays;
 
         seller = msg.sender;
         highBidder = msg.sender; // initialized to seller, overwritten if at least 1 valid bid revealed
     }
 
     function placeBid(bytes32 sealedBid) public payable {
-        require(block.timestamp < endOfBidding, "SBA: cannot place bid once bidding period is over");
+        require(block.timestamp < endOfBidPhase, "SBA: cannot place bid once bidding period is over");
         require(sealedBidOf[msg.sender] == 0, "SBA: cannot place more than one bid");
         require(msg.value >= reservePrice, "SBA: bid amount cannot be less than reserve price");
 
@@ -263,7 +422,7 @@ contract SealedBidAuction {
     }
 
     function reveal(uint256 bidAmount, bytes32 nonce) public {
-        require(block.timestamp >= endOfBidding && block.timestamp < endOfRevealing, "SBA: can only reveal bid during reveal phase");
+        require(block.timestamp >= endOfBidPhase && block.timestamp < endOfRevealPhase, "SBA: can only reveal bid during reveal phase");
         require(keccak256(abi.encodePacked(bidAmount, nonce)) == sealedBidOf[msg.sender], "SBA: revealed bid does not match sealed bid");
         require(bidAmount >= reservePrice, "SBA: revealed bid is less than the reserve price");
         require(bidAmount <= balanceOf[msg.sender], "SBA: sent value is less than the bid amount");
@@ -281,5 +440,16 @@ contract SealedBidAuction {
             balanceOf[highBidder] -= highBid;
             balanceOf[seller] += highBid;
         }
+    }
+
+    function withdraw() public {
+        require(block.timestamp >= endOfRevealPhase, "SBA: cannot withdraw before end of reveal phase");
+        require(balanceOf[msg.sender] > 0, "SBA: no balance available to withdraw");
+
+        uint256 amountToWithdraw = balanceOf[msg.sender];
+        balanceOf[msg.sender] = 0;
+
+        (bool success, ) = payable(msg.sender).call{value: amountToWithdraw}("");
+        require(success);
     }
 }
