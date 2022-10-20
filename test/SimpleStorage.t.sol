@@ -1,19 +1,19 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.13;
 
 import {Test} from "forge-std/Test.sol";
-import {SimpleStorage2} from "../src/SimpleStorage.sol";
+import {SimpleStorage3} from "../src/SimpleStorage.sol";
 
-contract SimpleStorage2Test is Test {
+contract SimpleStorage3Test is Test {
     //
-    SimpleStorage2 ss;
+    SimpleStorage3 ss;
 
     address user = address(0xCAFE);
 
     event NumberSet(address indexed setter, uint8 newNumber);
 
     function setUp() public {
-        ss = new SimpleStorage2();
+        ss = new SimpleStorage3();
     }
 
     function test_set() public {

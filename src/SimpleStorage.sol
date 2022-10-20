@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
-contract SimpleStorage2 {
+//    ____  _  _      ____  _     _____
+//  / ___\/ \/ \__/|/  __\/ \   /  __/
+//  |    \| || |\/|||  \/|| |   |  \  
+//  \___ || || |  |||  __/| |_/\|  /_ 
+//  \____/\_/\_/  \|\_/   \____/\____\
+//
+contract SimpleStorage3 {
     //
     event NumberSet(address indexed setter, uint8 newNumber);
 
