@@ -6,12 +6,12 @@ import "forge-std/Test.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {ERC4626} from "solmate/mixins/ERC4626.sol";
 
-/**
+/*
 
 Feature: Cash-secured Wrapped Ether
 
     As an Option Market Maker,
-    I want to use USDC to collateralize my ETH puts,
+    I want to use USDC to collateralize the ETH calls that I write,
     so that I can achieve higher capital efficiency and simplify my PNL accounting.
 
     Scenario: Deposit USDC into vault
@@ -72,28 +72,33 @@ Feature: Cash-secured Wrapped Ether
 
 contract cashWETHTest is Test {
     //
+    ERC20 internal usdc;
     IWETH internal weth;
     ChainlinkOracle internal oracleEthUsd;
+
     CashWETH internal cashWETH;
 
     uint256 internal constant BLOCK = 16_957_534;
 
+    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address internal constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address internal constant CHAINLINK_ETHUSD = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
     function setUp() public {
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), BLOCK);
 
+        usdc = ERC20(USDC);
         weth = IWETH(WETH9);
         oracleEthUsd = ChainlinkOracle(CHAINLINK_ETHUSD);
-        cashWETH = new CashWETH(weth, oracleEthUsd);
+        cashWETH = new CashWETH(usdc, weth, oracleEthUsd);
     }
 
     function testInitial() public {
         assertEq(cashWETH.name(), "Cash-secured Wrapped Ether", "ERC4626 name");
         assertEq(cashWETH.symbol(), "cashWETH", "ERC4626 symbol");
-        assertEq(cashWETH.decimals(), 18, "ERC4626 decimals");
-        assertEq(address(cashWETH.asset()), address(weth), "ERC4626 asset");
+        assertEq(cashWETH.decimals(), usdc.decimals(), "ERC4626 decimals");
+        assertEq(address(cashWETH.asset()), address(usdc), "ERC4626 asset");
+        assertEq(address(cashWETH.weth()), address(weth), "ERC4626 weth");
         assertEq(address(cashWETH.oracleEthUsd()), address(oracleEthUsd), "ERC4626 oracle");
     }
 
@@ -103,22 +108,26 @@ contract cashWETHTest is Test {
         assertApproxEqRel(updatedAt, 1_680_389_735, 0.1e18, "oracleEthUsd latest updatedAt");
     }
 
-    // TODO
-    
+    // TODO more scenarios
+
 }
 
 /// @title cashWETH, rhymes with "hashish"
 contract CashWETH is ERC4626 {
     //
-    ChainlinkOracle public oracleEthUsd;
+    IWETH public immutable weth;
+    ChainlinkOracle public immutable oracleEthUsd;
 
-    constructor(IWETH _weth, ChainlinkOracle _oracleEthUsd) ERC4626(ERC20(address(_weth)), "Cash-secured Wrapped Ether", "cashWETH") {
+    constructor(ERC20 _usdc, IWETH _weth, ChainlinkOracle _oracleEthUsd) ERC4626(_usdc, "Cash-secured Wrapped Ether", "cashWETH") {
+        weth = _weth;
         oracleEthUsd = _oracleEthUsd;
     }
 
     function totalAssets() public view override returns (uint256) {
         return asset.balanceOf(address(this));
     }
+
+    // TODO Add function that withdraws WETH
 }
 
 interface IWETH {
