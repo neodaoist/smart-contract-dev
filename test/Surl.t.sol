@@ -42,10 +42,7 @@ contract SurlTest is Test {
     function testPostFormData() public {
         string[] memory headers = new string[](1);
         headers[0] = "Content-Type: application/x-www-form-urlencoded";
-        (uint256 status, bytes memory data) = "https://httpbin.org/post".post(
-            headers,
-            "formfield=myemail@ethereum.org"
-        );
+        (uint256 status, bytes memory data) = "https://httpbin.org/post".post(headers, "formfield=myemail@ethereum.org");
 
         assertEq(status, 200);
 
@@ -66,7 +63,7 @@ contract SurlTest is Test {
     }
 
     function testPut() public {
-        (uint256 status, ) = "https://httpbin.org/put".put();
+        (uint256 status,) = "https://httpbin.org/put".put();
 
         assertEq(status, 200);
     }
@@ -83,13 +80,13 @@ contract SurlTest is Test {
     }
 
     function testDelete() public {
-        (uint256 status, ) = "https://httpbin.org/delete".del();
+        (uint256 status,) = "https://httpbin.org/delete".del();
 
         assertEq(status, 200);
     }
 
     function testPatch() public {
-        (uint256 status, ) = "https://httpbin.org/patch".patch();
+        (uint256 status,) = "https://httpbin.org/patch".patch();
 
         assertEq(status, 200);
     }

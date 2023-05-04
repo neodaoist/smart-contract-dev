@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 
 contract BitsAndBytesTest is Test {
     //
-
     function testAddress() public {
         address one = address(0x1);
         assertEq(one, 0x0000000000000000000000000000000000000001);
@@ -23,7 +22,7 @@ contract BitsAndBytesTest is Test {
         // string memory str = "h"; // 0x68
         // string memory str = unicode"¥"; // 0xc2a5
         string memory str = unicode"🙂"; // 0xf09f9982
-        
+
         // emit log_bytes(bytes(str));
         assertEq(bytes(str), bytes(hex"f09f9982"));
     }

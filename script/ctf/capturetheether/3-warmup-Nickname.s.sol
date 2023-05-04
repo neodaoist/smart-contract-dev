@@ -5,7 +5,6 @@ import "forge-std/Script.sol";
 
 contract NicknameScript is Script {
     //
-
     address cteAddress = 0x71c46Ed333C35e4E6c62D32dc7C8F00D125b4fee;
 
     function run() public {

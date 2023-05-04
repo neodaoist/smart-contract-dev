@@ -97,6 +97,6 @@
 //         assertEq(fundsRecipient, payable(DEFAULT_FUNDS_RECIPIENT_ADDRESS));
 
 //         assertEq(drop.name(), "Test Mutant Ninja Turtles");
-//         assertEq(drop.symbol(), "TMNT");        
+//         assertEq(drop.symbol(), "TMNT");
 //     }
 // }

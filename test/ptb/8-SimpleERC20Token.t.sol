@@ -143,7 +143,7 @@ contract SimpleERC20Token {
     string public constant symbol = "SET";
     uint8 public constant decimals = 18;
 
-    constructor () {
+    constructor() {
         balanceOf[msg.sender] = totalSupply;
         emit Events.Transfer(address(0), msg.sender, totalSupply);
     }
@@ -175,7 +175,7 @@ contract SimpleERC20Token {
         balanceOf[from] -= value;
         balanceOf[to] += value;
         allowance[from][msg.sender] -= value;
-        
+
         emit Events.Transfer(from, to, value);
 
         return true;

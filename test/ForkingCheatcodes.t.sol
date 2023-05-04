@@ -115,9 +115,7 @@ contract ForkingCheatcodesTest is Test {
         assertEq(WETH.balanceOf(me), 777_940_133_568_685_575);
 
         vm.store(
-            WETH_TOKEN_ADDR,
-            0xbcfb221e9342dcd5de3d9275da6423d236f891cdb48b8b7b2034f7283cdc6058,
-            bytes32(uint256(1337))
+            WETH_TOKEN_ADDR, 0xbcfb221e9342dcd5de3d9275da6423d236f891cdb48b8b7b2034f7283cdc6058, bytes32(uint256(1337))
         );
 
         assertEq(WETH.balanceOf(me), 1337);

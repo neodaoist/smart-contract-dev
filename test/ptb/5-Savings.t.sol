@@ -62,7 +62,7 @@ contract SavingsTest is Test {
         savings.withdraw();
     }
 
-    function test_withdraw_whenNotEnoughTime_shouldFail() public {        
+    function test_withdraw_whenNotEnoughTime_shouldFail() public {
         vm.startPrank(OWNER);
         savings.deposit{value: 1 ether}(1 ether);
 
@@ -84,7 +84,7 @@ contract Savings {
         _;
     }
 
-    constructor (address _owner, uint256 _daysToWait) {
+    constructor(address _owner, uint256 _daysToWait) {
         owner = _owner;
         deadline = block.timestamp + (_daysToWait * 1 days);
     }

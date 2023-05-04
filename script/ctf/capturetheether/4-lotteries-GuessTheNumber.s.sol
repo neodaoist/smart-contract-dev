@@ -5,7 +5,6 @@ import "forge-std/Script.sol";
 
 contract GuessTheNumberScript is Script {
     //
-
     function run() public {
         vm.broadcast();
         GuessTheNumberChallenge challenge = GuessTheNumberChallenge(0x824026FB0735b7fCa0E02C24C1A466D2210A7be4);

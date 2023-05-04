@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 
 contract TrivialTest is Test {
     //
-
     Trivial trivial;
 
     function setUp() public {

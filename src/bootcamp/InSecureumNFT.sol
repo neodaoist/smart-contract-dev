@@ -17,10 +17,10 @@
 //     bool public publicSale = false;
 //     uint private price;
 //     uint public saleStartTime;
-//     uint public constant saleDuration = 13*13337; // 13337 blocks assuming 13s block times 
+//     uint public constant saleDuration = 13*13337; // 13337 blocks assuming 13s block times
 //     uint internal nonce = 0;
 //     uint[TOKEN_LIMIT] internal indices;
- 
+
 //     constructor(address payable _beneficiary) {
 //         deployer = payable(msg.sender);
 //         beneficiary = _beneficiary;
@@ -67,8 +67,8 @@
 //             return ((saleDuration - elapsed) * price) / saleDuration;
 //         }
 //     }
-    
-//     // SALE_LIMIT is 1337 
+
+//     // SALE_LIMIT is 1337
 //     // Rest i.e. (TOKEN_LIMIT - SALE_LIMIT) are reserved for community distribution (not shown)
 //     function mint() external payable returns (uint) {
 //         require(publicSale, "Sale not started.");

@@ -3,16 +3,16 @@
 // import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/security/Pausable.sol";
 
 // contract InSecureumDAO is Pausable, ReentrancyGuard {
-    
+
 //     // Assume that all functionality represented by ... below is implemented as expected
-     
+
 //     address public admin;
 //     mapping (address => bool) public members;
 //     mapping (uint256 => uint8[]) public votes;
 //     mapping (uint256 => uint8) public winningOutcome;
 //     uint256 memberCount = 0;
 //     uint256 membershipFee = 1000;
-     
+
 //     modifier onlyWhenOpen() {
 //         require(address(this).balance > 0, 'InSecureumDAO: This DAO is closed');
 //         _;
@@ -28,12 +28,12 @@
 //         ...
 //         _;
 //     }
-    
+
 //     constructor (address _admin) {
 //         require(_admin == address(0));
 //         admin = _admin;
 //     }
-  
+
 //     function openDAO() external payable onlyAdmin {
 //         // Admin is expected to open DAO by making a notional deposit
 //         ...
@@ -59,12 +59,12 @@
 //         ...
 //         return(winningOutcome[_voteId]);
 //     }
-  
+
 //     function setMembershipFee(uint256 _fee) external onlyAdmin {
 //         membershipFee = _fee;
 //     }
-  
+
 //     function removeAllMembers() external onlyAdmin {
 //         delete members[msg.sender];
-//     }  
+//     }
 // }

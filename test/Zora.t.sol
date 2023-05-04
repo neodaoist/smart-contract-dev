@@ -31,7 +31,7 @@ contract ZoraTest is Test {
         // Deploy NFT contract and mint one
         nft = new ERC721Contract("Handrolled NFT", "ROLLUP");
         nft.mint(owner, 1337);
-        
+
         // Get Zora modules
         zReserve = ReserveAuctionCoreEth(RESERVE_AUCTION_CORE_ETH);
         zAsks = Asks(ASKS);

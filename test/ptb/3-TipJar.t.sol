@@ -72,14 +72,14 @@ contract TipJar {
     //
     address private owner;
 
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(msg.sender == owner, "TipJar: only owner can do this");
         _;
     }
 
-    constructor (address _owner) {
-        owner = _owner;    
-    }    
+    constructor(address _owner) {
+        owner = _owner;
+    }
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;

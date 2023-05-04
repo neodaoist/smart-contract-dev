@@ -5,7 +5,6 @@ import "forge-std/Script.sol";
 
 contract GuessTheNewNumberChallengeScript is Script {
     //
-
     function run() public {
         vm.broadcast();
         AttackerContract attacker = AttackerContract(0x309540f8b1547a197F00f806B4b50C59B0A907d7);

@@ -40,7 +40,7 @@ contract SimpleStorage3Test is Test {
         emit NumberSet(user, 2);
 
         ss.set(2);
-        
+
         assertEq(ss.get(), 2);
 
         vm.expectEmit(true, true, true, true);

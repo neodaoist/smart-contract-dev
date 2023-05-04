@@ -118,7 +118,7 @@ contract CoinFlipTest is Test {
 
     // note technically player1 does not need to perform the reveal() tx and
     // the PTB example mentions this. I didn't include access control, but I
-    // do still prank from player1 in tests bc that is most realistic. I would 
+    // do still prank from player1 in tests bc that is most realistic. I would
     // probably limit access to player1 in a real world application, bc unless
     // something outside the trust model is happening, no one else should know
     // player1's choice or nonce – i.e., principle of least common mechanism,
@@ -167,7 +167,7 @@ contract CoinFlipTest is Test {
 
         vm.warp(block.timestamp + 24 hours);
 
-        // note again, does not enforce access control, but most realistic that player2 performs — 
+        // note again, does not enforce access control, but most realistic that player2 performs —
         // could/would/should add tests around "anyone can peform", Or enforce access control
         vm.prank(p2);
         flip.claimTimeout();
@@ -213,7 +213,7 @@ contract CoinFlip {
         require(player2 == address(0), "CoinFlip: cannot cancel after bet was taken");
 
         betAmount = 0;
-        (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
+        (bool success,) = payable(msg.sender).call{value: address(this).balance}("");
         require(success);
     }
 
@@ -234,10 +234,10 @@ contract CoinFlip {
         require(keccak256(abi.encodePacked(choice, nonce)) == player1Commitment, "CoinFlip: does not match commitment");
 
         if (player2Choice == choice) {
-            (bool success, ) = payable(player2).call{value: address(this).balance}("");
+            (bool success,) = payable(player2).call{value: address(this).balance}("");
             require(success);
         } else {
-            (bool success, ) = payable(player1).call{value: address(this).balance}("");
+            (bool success,) = payable(player1).call{value: address(this).balance}("");
             require(success);
         }
     }
@@ -245,7 +245,7 @@ contract CoinFlip {
     function claimTimeout() public {
         require(block.timestamp >= expiration, "CoinFlip: cannot claim timeout before bet expiration");
 
-        (bool success, ) = payable(player2).call{value: address(this).balance}("");
+        (bool success,) = payable(player2).call{value: address(this).balance}("");
         require(success);
     }
 }

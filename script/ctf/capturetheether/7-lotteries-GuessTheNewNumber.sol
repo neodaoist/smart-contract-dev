@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 contract GuessTheNewNumberAttacker {
     //
-
     function guess() external payable {
         require(msg.value >= 1 ether, "Not enough funds");
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-// inspired by 
+// inspired by
 contract XYZTest is Test {
     //
     XYZ xyz;
@@ -18,6 +18,5 @@ contract XYZTest is Test {
 }
 
 contract XYZ {
-    //
-
+//
 }

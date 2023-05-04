@@ -24,7 +24,7 @@ contract CounterTest is Test {
 
         for (uint256 i = 1; i < 101; i++) {
             counter.increment();
-            assertEq(counter.count(), FIRST + i);            
+            assertEq(counter.count(), FIRST + i);
         }
     }
 }
@@ -33,10 +33,10 @@ contract Counter {
     //
     uint256 public count;
 
-    constructor (uint256 _count) {
+    constructor(uint256 _count) {
         count = _count;
     }
-    
+
     function increment() public {
         count += 1;
     }

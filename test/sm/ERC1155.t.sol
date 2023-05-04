@@ -9,19 +9,11 @@ import "../../src/sm/ERC1155Contract.sol";
 contract ERC1155Test is Test {
     //
     event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 id,
-        uint256 amount
+        address indexed operator, address indexed from, address indexed to, uint256 id, uint256 amount
     );
 
     event TransferBatch(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256[] ids,
-        uint256[] amounts
+        address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] amounts
     );
 
     event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
@@ -853,13 +845,11 @@ contract ERC1155Recipient is ERC1155TokenReceiver {
     uint256 public amount;
     bytes public mintData;
 
-    function onERC1155Received(
-        address _operator,
-        address _from,
-        uint256 _id,
-        uint256 _amount,
-        bytes calldata _data
-    ) public override returns (bytes4) {
+    function onERC1155Received(address _operator, address _from, uint256 _id, uint256 _amount, bytes calldata _data)
+        public
+        override
+        returns (bytes4)
+    {
         operator = _operator;
         from = _from;
         id = _id;
@@ -903,45 +893,41 @@ contract ERC1155Recipient is ERC1155TokenReceiver {
 contract NonERC1155Recipient {}
 
 contract RevertingERC1155Recipient is ERC1155TokenReceiver {
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) public pure override returns (bytes4) {
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata)
+        public
+        pure
+        override
+        returns (bytes4)
+    {
         revert(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155Received.selector)));
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external pure override returns (bytes4) {
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         revert(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155BatchReceived.selector)));
     }
 }
 
 contract WrongReturnDataERC1155Recipient is ERC1155TokenReceiver {
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) public pure override returns (bytes4) {
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata)
+        public
+        pure
+        override
+        returns (bytes4)
+    {
         return 0xCAFEBABE;
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external pure override returns (bytes4) {
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         return 0xCAFEBABE;
     }
 }

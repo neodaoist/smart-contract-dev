@@ -23,6 +23,9 @@ forge test --fork-url <rpcURL> --fork-block-number <blockNumber>
 forge script script/NFT.s.sol:NFTScript --rpc-url $RINKEBY_RPC_URL  --private-key $PRIVATE_KEY --broadcast --verify --etherscan-api-key $ETHERSCAN_KEY -vvvv
 forge create <path>:<contractName> --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY
 forge verify-contract --compiler-version "<compilerVersion>" <contractAddress> <path>:<contractName> "<etherscanKey>" --chain-id=<chainId>
+# v0.8.11+commit.d7f03943
+# v0.8.13+commit.abaa5c0e
+# v0.8.17+commit.8df45f5f
 
 ## Utility commands
 

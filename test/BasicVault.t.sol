@@ -5,14 +5,14 @@ import "forge-std/Test.sol";
 import "../src/BasicVault.sol";
 
 abstract contract LeetToken is ERC20 {
-    //
-    // constructor() ERC20("Leet Token", "LEET", 18) {}
-    // function mint(address to, uint256 value) public virtual {
-    //     _mint(to, value);
-    // }
-    // function burn(address from, uint256 value) public virtual {
-    //     _burn(from, value);
-    // }
+//
+// constructor() ERC20("Leet Token", "LEET", 18) {}
+// function mint(address to, uint256 value) public virtual {
+//     _mint(to, value);
+// }
+// function burn(address from, uint256 value) public virtual {
+//     _burn(from, value);
+// }
 }
 
 // contract BasicVaultTest is Test {

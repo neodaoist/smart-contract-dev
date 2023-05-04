@@ -35,9 +35,7 @@ contract TWAPTest is Test {
         uint256 p3,
         uint256 p4,
         uint256 p5
-    )
-        public
-    {
+    ) public {
         t1 = bound(t1, 5 seconds, 15 seconds);
         t2 = bound(t2, 5 seconds, 15 seconds);
         t3 = bound(t3, 5 seconds, 15 seconds);

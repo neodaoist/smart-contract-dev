@@ -46,11 +46,7 @@ contract ERC721Test is Test {
         vm.stopPrank();
     }
 
-    function thenTransferWasSuccessful(
-        address from_,
-        address to_,
-        uint256 tokenID_
-    ) internal {
+    function thenTransferWasSuccessful(address from_, address to_, uint256 tokenID_) internal {
         // transfers the ownership of the given token ID to the given address
         assertEq(token.ownerOf(tokenID_), to_);
 
@@ -73,11 +69,7 @@ contract ERC721Test is Test {
         assertEq(token.ownerOf(123), to);
     }
 
-    function thenTransferWasSuccessful_events(
-        address from_,
-        address to_,
-        uint256 tokenID_
-    ) internal {
+    function thenTransferWasSuccessful_events(address from_, address to_, uint256 tokenID_) internal {
         // need to expect these logs in reverse order
 
         // emits an Approval event
@@ -93,11 +85,7 @@ contract ERC721Test is Test {
 
     // }
 
-    function shouldSafeTransferTokensByUsers(
-        address from_,
-        address to_,
-        uint256 tokenID_
-    ) internal {
+    function shouldSafeTransferTokensByUsers(address from_, address to_, uint256 tokenID_) internal {
         // When called by owner
         token.safeTransferFrom(from_, to_, tokenID_);
         thenTransferWasSuccessful(from_, to_, tokenID_);
@@ -683,12 +671,11 @@ contract ERC721Recipient is IERC721Receiver {
     uint256 public id;
     bytes public data;
 
-    function onERC721Received(
-        address _operator,
-        address _from,
-        uint256 _id,
-        bytes calldata _data
-    ) public override returns (bytes4) {
+    function onERC721Received(address _operator, address _from, uint256 _id, bytes calldata _data)
+        public
+        override
+        returns (bytes4)
+    {
         operator = _operator;
         from = _from;
         id = _id;
@@ -703,12 +690,7 @@ contract NonERC721Recipient {}
 contract RevertingWithMessageERC721Recipient is IERC721Receiver {
     event log(string info);
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) public override returns (bytes4) {
         revert(string(abi.encodePacked(IERC721Receiver.onERC721Received.selector)));
     }
 }
@@ -716,35 +698,20 @@ contract RevertingWithMessageERC721Recipient is IERC721Receiver {
 contract RevertingWithoutMessageERC721Recipient is IERC721Receiver {
     event log(string info);
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) public override returns (bytes4) {
         revert();
     }
 }
 
 contract PanickingERC721Recipient is IERC721Receiver {
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) public override returns (bytes4) {
         uint256 a = uint256(0) / uint256(0);
         a;
     }
 }
 
 contract WrongReturnDataERC721Recipient is IERC721Receiver {
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) public override returns (bytes4) {
         return 0xDEADCAFE;
     }
 }

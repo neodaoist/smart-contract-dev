@@ -15,7 +15,7 @@ contract MinimalTokenTest is Test {
         token = new MinimalToken(100);
     }
 
-    function test_totalSupply() public {        
+    function test_totalSupply() public {
         assertEq(token.balanceOf(deployer), 100);
     }
 
@@ -56,7 +56,7 @@ contract MinimalToken {
     //
     mapping(address => uint256) public balanceOf;
 
-    constructor (uint256 _totalSupply) {
+    constructor(uint256 _totalSupply) {
         balanceOf[msg.sender] = _totalSupply;
     }
 

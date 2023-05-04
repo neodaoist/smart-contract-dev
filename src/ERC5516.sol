@@ -736,7 +736,7 @@
 //      * - A token under `id` must exist.
 //      * - When `action` is non-zero, a token under `id` will now be claimed and owned by`operator`.
 //      * - When `action` is false, a token under `id` will now be rejected.
-//      * 
+//      *
 //      */
 //     function _beforeTokenClaim(
 //         address operator,
@@ -753,7 +753,7 @@
 //      * - A token under `id` must exist.
 //      * - When `action` is non-zero, a token under `id` is now owned by`operator`.
 //      * - When `action` is false, a token under `id` was rejected.
-//      * 
+//      *
 //      */
 //     function _afterTokenClaim(
 //         address operator,

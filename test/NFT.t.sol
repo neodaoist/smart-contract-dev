@@ -83,11 +83,8 @@ contract NFTTest is Test {
     function testSafeContractReceived() public {
         Receiver receiver = new Receiver();
         nft.mintTo{value: 0.08 ether}(address(receiver));
-        uint256 slotBalance = stdstore
-            .target(address(nft))
-            .sig(nft.balanceOf.selector)
-            .with_key(address(receiver))
-            .find();
+        uint256 slotBalance =
+            stdstore.target(address(nft)).sig(nft.balanceOf.selector).with_key(address(receiver)).find();
 
         uint256 balance = uint256(vm.load(address(nft), bytes32(slotBalance)));
         assertEq(balance, 1);
@@ -153,12 +150,11 @@ contract NFTTest is Test {
 }
 
 contract Receiver is ERC721TokenReceiver {
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 id,
-        bytes calldata data
-    ) external override returns (bytes4) {
+    function onERC721Received(address operator, address from, uint256 id, bytes calldata data)
+        external
+        override
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }

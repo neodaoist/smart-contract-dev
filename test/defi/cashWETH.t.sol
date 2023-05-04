@@ -103,13 +103,12 @@ contract cashWETHTest is Test {
     }
 
     function testOracle() public {
-        (, int256 answer, , uint256 updatedAt, ) = oracleEthUsd.latestRoundData();
+        (, int256 answer,, uint256 updatedAt,) = oracleEthUsd.latestRoundData();
         assertApproxEqRel(answer, 182_403_000_000, 0.1e18, "oracleEthUsd latest answer");
         assertApproxEqRel(updatedAt, 1_680_389_735, 0.1e18, "oracleEthUsd latest updatedAt");
     }
 
     // TODO more scenarios
-
 }
 
 /// @title cashWETH, rhymes with "hashish"
@@ -118,7 +117,9 @@ contract CashWETH is ERC4626 {
     IWETH public immutable weth;
     ChainlinkOracle public immutable oracleEthUsd;
 
-    constructor(ERC20 _usdc, IWETH _weth, ChainlinkOracle _oracleEthUsd) ERC4626(_usdc, "Cash-secured Wrapped Ether", "cashWETH") {
+    constructor(ERC20 _usdc, IWETH _weth, ChainlinkOracle _oracleEthUsd)
+        ERC4626(_usdc, "Cash-secured Wrapped Ether", "cashWETH")
+    {
         weth = _weth;
         oracleEthUsd = _oracleEthUsd;
     }
@@ -136,14 +137,8 @@ interface IWETH {
 }
 
 interface ChainlinkOracle {
-  function latestRoundData()
-    external
-    view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    );
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
 }

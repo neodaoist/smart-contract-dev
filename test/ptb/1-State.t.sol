@@ -22,7 +22,7 @@ contract State {
     //
     uint256 private state;
 
-    constructor (uint256 _state) {
+    constructor(uint256 _state) {
         state = _state;
     }
 

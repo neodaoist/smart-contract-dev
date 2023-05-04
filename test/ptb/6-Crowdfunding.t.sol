@@ -8,7 +8,7 @@ contract CrowdfundingTest is Test {
     //
     Crowdfunding cf;
 
-    // People 
+    // People
     address OWNER = address(0xBABE);
     address RANDOM = address(0xABCD);
     address PLEDGER1 = address(0x1);
@@ -117,7 +117,7 @@ contract CrowdfundingTest is Test {
         cf.pledge{value: GOAL}(GOAL);
 
         vm.warp(START + (DAYS * 1 days) - 1 days); // before deadline
-        
+
         vm.expectRevert("Crowdfunding: cannot claim funds before deadline");
 
         vm.prank(OWNER);
@@ -129,7 +129,7 @@ contract CrowdfundingTest is Test {
         cf.pledge{value: GOAL - 0.1 ether}(GOAL - 0.1 ether); // goal not reached
 
         vm.warp(START + (DAYS * 1 days));
-        
+
         vm.expectRevert("Crowdfunding: cannot claim funds because goal was not reached");
 
         vm.prank(OWNER);
@@ -154,7 +154,7 @@ contract CrowdfundingTest is Test {
         assertEq(address(cf).balance, 4 ether);
 
         vm.warp(START + (DAYS * 1 days));
-        
+
         vm.prank(PLEDGER1);
         cf.getRefund();
         assertEq(PLEDGER1.balance, 10 ether);
@@ -179,18 +179,18 @@ contract CrowdfundingTest is Test {
     function test_getRefund_whenBeforeDeadline_shouldRevert() public {
         vm.startPrank(PLEDGER1);
         cf.pledge{value: GOAL}(GOAL);
-        
+
         vm.warp(START + (DAYS * 1 days) - 1 days); // before deadline
 
         vm.expectRevert("Crowdfunding: cannot get refund before deadline");
 
-        cf.getRefund();        
+        cf.getRefund();
     }
 
     function test_getRefund_whenGoalReached_shouldRevert() public {
         vm.startPrank(PLEDGER1);
         cf.pledge{value: GOAL}(GOAL); // goal successfully reached
-        
+
         vm.warp(START + (DAYS * 1 days));
 
         vm.expectRevert("Crowdfunding: cannot get refund because goal was reached");
@@ -210,7 +210,7 @@ contract CrowdfundingTest is Test {
     function test_getRefund_whenAlreadyGotRefund_shouldRevert() public {
         vm.startPrank(PLEDGER1);
         cf.pledge{value: 1 ether}(1 ether);
-        
+
         vm.warp(START + (DAYS * 1 days));
 
         cf.getRefund();
@@ -229,7 +229,7 @@ contract Crowdfunding {
 
     mapping(address => uint256) public pledgeOf;
 
-    constructor (uint256 _numberOfDays, uint256 _fundingGoal) {
+    constructor(uint256 _numberOfDays, uint256 _fundingGoal) {
         owner = msg.sender;
         deadline = block.timestamp + (_numberOfDays * 1 days);
         goal = _fundingGoal;
@@ -255,7 +255,7 @@ contract Crowdfunding {
         require(block.timestamp >= deadline, "Crowdfunding: cannot claim funds before deadline");
         require(address(this).balance >= goal, "Crowdfunding: cannot claim funds because goal was not reached");
 
-        (bool success, ) = msg.sender.call{value: address(this).balance}("");
+        (bool success,) = msg.sender.call{value: address(this).balance}("");
 
         require(success, "Crowdfunding: claim funds failed");
     }
@@ -267,7 +267,7 @@ contract Crowdfunding {
 
         uint256 refundAmount = pledgeOf[msg.sender];
         pledgeOf[msg.sender] = 0;
-        (bool success, ) = msg.sender.call{value: refundAmount}("");
+        (bool success,) = msg.sender.call{value: refundAmount}("");
 
         require(success, "Crowdfunding: get refund failed");
     }

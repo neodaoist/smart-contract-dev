@@ -127,7 +127,7 @@ contract BasicBaboonsTest is Test {
 
     function test_ReduceSupply_WhenGreaterThanOrEqualToPreviousMaxSupply_ShouldRevert() public {
         vm.startPrank(TEAM_MULTISIG);
-        
+
         // no revert
         babs.reduceSupply(999);
         assertEq(babs.maxSupply(), 999);
@@ -157,7 +157,7 @@ contract BasicBaboonsTest is Test {
 
     function test_TeamAllocation() public {
         assertEq(babs.balanceOf(TEAM_MULTISIG), TEAM_ALLOCATION);
-        for(uint256 i = 1; i < TEAM_ALLOCATION; i++) {
+        for (uint256 i = 1; i < TEAM_ALLOCATION; i++) {
             assertEq(babs.ownerOf(i), TEAM_MULTISIG);
         }
     }
@@ -270,7 +270,7 @@ contract BasicBaboonsTest is Test {
 
     function test_MintFromAllowlist_WhenNotAllowlisted_ShouldRevert() public {
         vm.expectRevert("Address not allowlisted");
-        
+
         vm.prank(address(0xABCD)); // from random EOA
         babs.mintAllowlist();
     }
@@ -284,7 +284,7 @@ contract BasicBaboonsTest is Test {
         salePrice = bound(salePrice, 0.01 ether, 100 ether);
 
         (address receiver, uint256 royaltyAmount) = babs.royaltyInfo(tokenId, salePrice);
-        
+
         assertEq(receiver, TEAM_MULTISIG);
         assertEq(royaltyAmount, (salePrice * INITIAL_ROYALTY_PERCENTAGE_IN_BIPS) / 10_000);
     }
@@ -304,7 +304,7 @@ contract BasicBaboonsTest is Test {
 
     function test_SetNewRoyalty_WhenGreaterThanMaxAllowed_ShouldRevert() public {
         vm.expectRevert("New royalty percentage must not exceed 10%");
-        
+
         vm.prank(TEAM_MULTISIG);
         babs.setNewRoyalty(MAX_ROYALTY_PERCENTAGE_IN_BIPS + 1);
     }
@@ -331,5 +331,5 @@ contract BasicBaboonsTest is Test {
     //     assertEq(babs.ownerOf(tokenId), address(0xB));
 
     //     // assert what is returned from royaltyInfo
-    // }    
+    // }
 }
