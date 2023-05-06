@@ -8,39 +8,51 @@ import "solmate/tokens/ERC20.sol";
 // inspired by https://jeiwan.net/posts/programming-defi-uniswap-1/
 contract ExchangeTest is Test {
     //
-    Token internal toke;
+    Token internal token;
     Exchange internal exchange;
 
+    modifier withLiquidity(uint256 _tokenAmount, uint256 _etherAmount) {
+        token.approve(address(exchange), _tokenAmount);
+        exchange.addLiquidity{value: _etherAmount}(_tokenAmount);
+        _;
+    }
+
     function setUp() public {
-        startHoax(address(0xCAFE), 10 ether);
-        toke = new Token("Toke", "TOKE", 1000e18);
-        exchange = new Exchange(address(toke));
+        startHoax(address(0xCAFE), 10_000 ether);
+        token = new Token("Toke", "TOKE", 10_000e18);
+        exchange = new Exchange(address(token));
     }
 
     function test_construction() public {
-        assertEq(toke.balanceOf(address(0xCAFE)), 1000e18, "initial trader balance");
-        assertEq(toke.balanceOf(address(exchange)), 0, "initial exchange balance");
-        assertEq(exchange.tokenAddress(), address(toke), "token address in exchange");
+        assertEq(token.balanceOf(address(0xCAFE)), 10_000e18, "initial trader balance");
+        assertEq(token.balanceOf(address(exchange)), 0, "initial exchange balance");
+        assertEq(exchange.tokenAddress(), address(token), "token address in exchange");
     }
 
     function testRevert_construction_whenTokenIsZeroAddress() public {
         vm.expectRevert(Exchange.InvalidTokenAddress.selector);
-        Exchange exchange = new Exchange(address(0));
+        new Exchange(address(0));
+    }
+
+    function test_getReserve() public {
+        assertEq(exchange.getReserve(), 0, "initial reserve");
     }
 
     function test_addLiquidity() public {
-        assertEq(toke.balanceOf(address(0xCAFE)), 1000e18, "trader token balance before addLiquidity");
-        assertEq(toke.balanceOf(address(exchange)), 0, "exchange token balance before addLiquidity");
-        assertEq(address(0xCAFE).balance, 10 ether, "trader ether balance before addLiquidity");
+        assertEq(token.balanceOf(address(0xCAFE)), 10_000e18, "trader token balance before addLiquidity");
+        assertEq(token.balanceOf(address(exchange)), 0, "exchange token balance before addLiquidity");
+        assertEq(exchange.getReserve(), 0, "exchange reserve before addLiquidity");
+        assertEq(address(0xCAFE).balance, 10_000 ether, "trader ether balance before addLiquidity");
         assertEq(address(exchange).balance, 0, "exchange ether balance before addLiquidity");
 
-        toke.approve(address(exchange), 200e18);
-        exchange.addLiquidity{value: 1 ether}(200e18);
+        token.approve(address(exchange), 2000e18);
+        exchange.addLiquidity{value: 1000 ether}(2000e18);
 
-        assertEq(toke.balanceOf(address(0xCAFE)), 800e18, "trader token balance after addLiquidity");
-        assertEq(exchange.getReserve(), 200e18, "exchange token balance after addLiquidity");
-        assertEq(address(0xCAFE).balance, 9 ether, "trader ether balance after addLiquidity");
-        assertEq(address(exchange).balance, 1 ether, "exchange ether balance after addLiquidity");
+        assertEq(token.balanceOf(address(0xCAFE)), 8000e18, "trader token balance after addLiquidity");
+        assertEq(token.balanceOf(address(exchange)), 2000e18, "exchange token balance before addLiquidity");
+        assertEq(exchange.getReserve(), 2000e18, "exchange reserve after addLiquidity");
+        assertEq(address(0xCAFE).balance, 9000 ether, "trader ether balance after addLiquidity");
+        assertEq(address(exchange).balance, 1000 ether, "exchange ether balance after addLiquidity");
     }
 
     function testRevert_addLiquidity_whenNotSufficientApproval() public {
@@ -48,13 +60,34 @@ contract ExchangeTest is Test {
         exchange.addLiquidity(10e18);
     }
 
-    // Now, lets think about how we would calculate exchange prices.
+    function test_getPrice() public withLiquidity(2000e18, 1000 ether) {
+        uint256 tokenReserve = exchange.getReserve();
+        uint256 etherReserve = address(exchange).balance;
+
+        assertEq(exchange.getPrice(etherReserve, tokenReserve), 500, "ETH per token");
+        assertEq(exchange.getPrice(tokenReserve, etherReserve), 2000, "tokens per ETH");
+    }
+
+    function test_getTokenAmount() public withLiquidity(2000e18, 1000 ether) {
+        assertEq(exchange.getTokenAmount(1 ether), 1998001998001998001, "tokens per ETH");
+    }
+
+    function test_getEthAmount() public withLiquidity(2000e18, 1000 ether) {
+        assertEq(exchange.getEthAmount(2e18), 999000999000999, "ETH per token"); // TODO investigate
+    }
+
+    // TODO Let’s improve our tests to see how slippage affects prices:
+
+    // TODO Now, we’re ready to implement swapping.
 
 }
 
 contract Exchange {
     //
     error InvalidTokenAddress();
+    error InvalidReserves();
+    error EthSoldTooSmall();
+    error TokenSoldTooSmall();
 
     address public tokenAddress;
 
@@ -73,6 +106,42 @@ contract Exchange {
     function getReserve() public view returns (uint256) {
         return IERC20(tokenAddress).balanceOf(address(this));
     }
+
+    function getPrice(uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
+        if (inputReserve == 0 || outputReserve == 0) {
+            revert InvalidReserves(); // TODO test
+        }
+
+        return (inputReserve * 1000) / outputReserve;
+    }
+
+    function getTokenAmount(uint256 _ethSold) public view returns (uint256) {
+        if (_ethSold == 0) {
+            revert EthSoldTooSmall(); // TODO test
+        }
+
+        uint256 tokenReserve = getReserve();
+
+        return _getAmount(_ethSold, address(this).balance, tokenReserve);
+    }
+
+    function getEthAmount(uint256 _tokenSold) public view returns (uint256) {
+        if (_tokenSold == 0) {
+            revert TokenSoldTooSmall(); // TODO test
+        }
+
+        uint256 tokenReserve = getReserve();
+
+        return _getAmount(_tokenSold, tokenReserve, address(this).balance);
+    }
+
+    function _getAmount(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) private pure returns (uint256) {
+        if (inputReserve == 0 || outputReserve == 0) {
+            revert InvalidReserves(); // TODO test
+        }
+
+        return (outputReserve * inputAmount) / (inputReserve + inputAmount);
+    }   
 }
 
 contract Token is ERC20 {
