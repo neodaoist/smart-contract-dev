@@ -72,14 +72,40 @@ contract ExchangeTest is Test {
         assertEq(exchange.getTokenAmount(1 ether), 1998001998001998001, "tokens per ETH");
     }
 
-    function test_getEthAmount() public withLiquidity(2000e18, 1000 ether) {
-        assertEq(exchange.getEthAmount(2e18), 999000999000999, "ETH per token"); // TODO investigate
+    function test_getTokenAmount(uint256 etherAmount) public withLiquidity(2000e18, 1000 ether) {
+        etherAmount = bound(etherAmount, 1 ether, 1000 ether);
+
+        uint256 expectedTokenAmount = (exchange.getReserve() * etherAmount) / (address(exchange).balance + etherAmount);
+        assertEq(exchange.getTokenAmount(etherAmount), expectedTokenAmount, "tokens per ETH");
     }
 
-    // TODO Let’s improve our tests to see how slippage affects prices:
+    function test_getEthAmount() public withLiquidity(2000e18, 1000 ether) {
+        assertEq(exchange.getEthAmount(2e18), 999000999000999000, "ETH per token");
+    }
 
-    // TODO Now, we’re ready to implement swapping.
+    function test_getEthAmount(uint256 tokenAmount) withLiquidity(2000e18, 1000 ether) public {
+        tokenAmount = bound(tokenAmount, 1e18, 2000e18);
 
+        uint256 expectedEthAmount = (address(exchange).balance * tokenAmount) / (exchange.getReserve() + tokenAmount);
+        assertEq(exchange.getEthAmount(tokenAmount), expectedEthAmount, "ETH per token");
+    }
+
+    function test_ethToTokenSwap() public withLiquidity(2_000e18, 1_000 ether) {
+        uint256 tokenReserve = exchange.getReserve();
+        uint256 etherReserve = address(exchange).balance;
+
+        uint256 minTokenAmount = exchange.getTokenAmount(1 ether);
+        uint256 expectedTokenAmount = (tokenReserve * 1 ether) / (etherReserve + 1 ether);
+        assertEq(minTokenAmount, expectedTokenAmount, "tokens per ETH");
+
+        token.approve(address(exchange), minTokenAmount);
+        exchange.ethToTokenSwap{value: 1 ether}(minTokenAmount);
+
+        assertEq(token.balanceOf(address(0xCAFE)), 10_000e18 - 2_000e18 + expectedTokenAmount, "trader token balance");
+        assertEq(exchange.getReserve(), 2_000e18 - expectedTokenAmount, "exchange reserve");
+        assertEq(address(0xCAFE).balance, 10_000 ether - 1_000 ether - 1 ether, "trader ether balance");
+        assertEq(address(exchange).balance, 1_000 ether + 1 ether, "exchange ether balance");
+    }
 }
 
 contract Exchange {
@@ -134,6 +160,29 @@ contract Exchange {
 
         return _getAmount(_tokenSold, tokenReserve, address(this).balance);
     }
+
+    function ethToTokenSwap(uint256 _minTokens) public payable {
+        uint256 tokenReserve = getReserve();
+        uint256 tokensSwapped = _getAmount(msg.value, address(this).balance - msg.value, tokenReserve);
+
+        if (tokensSwapped < _minTokens) {
+            // TODO revert
+        }
+
+        IERC20(tokenAddress).transfer(msg.sender, tokensSwapped);
+    }
+
+    // function tokenToEthSwap(uint256 _tokensSwapped, uint256 _minEth) public {
+    //     uint256 tokenReserve = getReserve();
+    //     uint256 ethSwapped = _getAmount(_tokensSwapped, tokenReserve, address(this).balance);
+
+    //     if (ethSwapped < _minEth) {
+    //         // TODO revert
+    //     }
+
+    //     IERC20(tokenAddress).transferFrom(msg.sender, address(this), _tokensSwapped);
+    //     payable(msg.sender).transfer(ethSwapped);        
+    // }
 
     function _getAmount(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) private pure returns (uint256) {
         if (inputReserve == 0 || outputReserve == 0) {
