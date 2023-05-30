@@ -23,6 +23,10 @@ contract ExchangeTest is Test {
         exchange = new Exchange(address(token));
     }
 
+    /*//////////////////////////////////////////////////////////////
+    //  Construction
+    //////////////////////////////////////////////////////////////*/
+
     function test_construction() public {
         assertEq(token.balanceOf(address(0xCAFE)), 10_000e18, "initial trader balance");
         assertEq(token.balanceOf(address(exchange)), 0, "initial exchange balance");
@@ -38,7 +42,11 @@ contract ExchangeTest is Test {
         assertEq(exchange.getReserve(), 0, "initial reserve");
     }
 
-    function test_addLiquidity() public {
+    /*//////////////////////////////////////////////////////////////
+    //  Adding Liquidity
+    //////////////////////////////////////////////////////////////*/
+
+    function test_addLiquidity_whenInitial() public {
         assertEq(token.balanceOf(address(0xCAFE)), 10_000e18, "trader token balance before addLiquidity");
         assertEq(token.balanceOf(address(exchange)), 0, "exchange token balance before addLiquidity");
         assertEq(exchange.getReserve(), 0, "exchange reserve before addLiquidity");
@@ -55,10 +63,33 @@ contract ExchangeTest is Test {
         assertEq(address(exchange).balance, 1000 ether, "exchange ether balance after addLiquidity");
     }
 
+    function test_addLiquidity_whenReservesProporitionAlreadyEstablished() public {
+        token.approve(address(exchange), type(uint256).max);
+        exchange.addLiquidity{value: 1000 ether}(2000e18);
+
+        assertEq(token.balanceOf(address(0xCAFE)), 8000e18, "trader token balance before addLiquidity");
+        assertEq(token.balanceOf(address(exchange)), 2000e18, "exchange token balance before addLiquidity");
+        assertEq(exchange.getReserve(), 2000e18, "exchange reserve before addLiquidity");
+        assertEq(address(0xCAFE).balance, 9000 ether, "trader ether balance before addLiquidity");
+        assertEq(address(exchange).balance, 1000 ether, "exchange ether balance before addLiquidity");
+
+        exchange.addLiquidity{value: 1000 ether}(3000e18);
+
+        assertEq(token.balanceOf(address(0xCAFE)), 6000e18, "trader token balance after addLiquidity");
+        assertEq(token.balanceOf(address(exchange)), 4000e18, "exchange token balance after addLiquidity");
+        assertEq(exchange.getReserve(), 4000e18, "exchange reserve after addLiquidity");
+        assertEq(address(0xCAFE).balance, 8000 ether, "trader ether balance after addLiquidity");
+        assertEq(address(exchange).balance, 2000 ether, "exchange ether balance after addLiquidity");
+    }
+
     function testRevert_addLiquidity_whenNotSufficientApproval() public {
         vm.expectRevert(stdError.arithmeticError);
         exchange.addLiquidity(10e18);
     }
+
+    /*//////////////////////////////////////////////////////////////
+    //  Getting Prices
+    //////////////////////////////////////////////////////////////*/
 
     function test_getPrice() public withLiquidity(2000e18, 1000 ether) {
         uint256 tokenReserve = exchange.getReserve();
@@ -90,6 +121,10 @@ contract ExchangeTest is Test {
         assertEq(exchange.getEthAmount(tokenAmount), expectedEthAmount, "ETH per token");
     }
 
+    /*//////////////////////////////////////////////////////////////
+    //  Swapping
+    //////////////////////////////////////////////////////////////*/
+
     function test_ethToTokenSwap() public withLiquidity(2_000e18, 1_000 ether) {
         uint256 tokenReserve = exchange.getReserve();
         uint256 etherReserve = address(exchange).balance;
@@ -98,13 +133,30 @@ contract ExchangeTest is Test {
         uint256 expectedTokenAmount = (tokenReserve * 1 ether) / (etherReserve + 1 ether);
         assertEq(minTokenAmount, expectedTokenAmount, "tokens per ETH");
 
-        token.approve(address(exchange), minTokenAmount);
         exchange.ethToTokenSwap{value: 1 ether}(minTokenAmount);
 
         assertEq(token.balanceOf(address(0xCAFE)), 10_000e18 - 2_000e18 + expectedTokenAmount, "trader token balance");
         assertEq(exchange.getReserve(), 2_000e18 - expectedTokenAmount, "exchange reserve");
         assertEq(address(0xCAFE).balance, 10_000 ether - 1_000 ether - 1 ether, "trader ether balance");
         assertEq(address(exchange).balance, 1_000 ether + 1 ether, "exchange ether balance");
+    }
+
+    function test_tokenToEthSwap() public withLiquidity(2_000e18, 1_000 ether) {
+        uint256 tokenReserve = exchange.getReserve();
+        uint256 etherReserve = address(exchange).balance;
+        uint256 tokenToSwap = 1e18;
+
+        uint256 minEtherAmount = exchange.getEthAmount(tokenToSwap);
+        uint256 expectedEtherAmount = (etherReserve * tokenToSwap) / (tokenReserve + tokenToSwap);
+        assertEq(minEtherAmount, expectedEtherAmount, "ETH per token");
+
+        token.approve(address(exchange), type(uint256).max);
+        exchange.tokenToEthSwap(tokenToSwap, minEtherAmount);
+
+        assertEq(token.balanceOf(address(0xCAFE)), 10_000e18 - 2_000e18 - tokenToSwap, "trader token balance");
+        assertEq(exchange.getReserve(), 2_000e18 + tokenToSwap, "exchange reserve");
+        assertEq(address(0xCAFE).balance, 10_000 ether - 1_000 ether + expectedEtherAmount, "trader ether balance");
+        assertEq(address(exchange).balance, 1_000 ether - expectedEtherAmount, "exchange ether balance");
     }
 }
 
@@ -114,6 +166,7 @@ contract Exchange {
     error InvalidReserves();
     error EthSoldTooSmall();
     error TokenSoldTooSmall();
+    error InsufficientTokenAmount();
 
     address public tokenAddress;
 
@@ -125,8 +178,20 @@ contract Exchange {
     }
 
     function addLiquidity(uint256 _tokenAmount) public payable {
-        IERC20 token = IERC20(tokenAddress);
-        token.transferFrom(msg.sender, address(this), _tokenAmount);
+        if (getReserve() == 0) {
+            IERC20 token = IERC20(tokenAddress);
+            token.transferFrom(msg.sender, address(this), _tokenAmount);            
+        } else {
+            uint256 ethReserve = address(this).balance - msg.value;
+            uint256 tokenReserve = getReserve();
+            uint256 tokenAmount = (msg.value * tokenReserve) / ethReserve;
+            if (_tokenAmount < tokenAmount) {
+                revert InsufficientTokenAmount();
+            }
+
+            IERC20 token = IERC20(tokenAddress);
+            token.transferFrom(msg.sender, address(this), tokenAmount);
+        }
     }
 
     function getReserve() public view returns (uint256) {
@@ -172,17 +237,17 @@ contract Exchange {
         IERC20(tokenAddress).transfer(msg.sender, tokensSwapped);
     }
 
-    // function tokenToEthSwap(uint256 _tokensSwapped, uint256 _minEth) public {
-    //     uint256 tokenReserve = getReserve();
-    //     uint256 ethSwapped = _getAmount(_tokensSwapped, tokenReserve, address(this).balance);
+    function tokenToEthSwap(uint256 _tokensSwapped, uint256 _minEth) public {
+        uint256 tokenReserve = getReserve();
+        uint256 ethSwapped = _getAmount(_tokensSwapped, tokenReserve, address(this).balance);
 
-    //     if (ethSwapped < _minEth) {
-    //         // TODO revert
-    //     }
+        if (ethSwapped < _minEth) {
+            // TODO revert
+        }
 
-    //     IERC20(tokenAddress).transferFrom(msg.sender, address(this), _tokensSwapped);
-    //     payable(msg.sender).transfer(ethSwapped);        
-    // }
+        IERC20(tokenAddress).transferFrom(msg.sender, address(this), _tokensSwapped);
+        payable(msg.sender).transfer(ethSwapped);        
+    }
 
     function _getAmount(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) private pure returns (uint256) {
         if (inputReserve == 0 || outputReserve == 0) {
