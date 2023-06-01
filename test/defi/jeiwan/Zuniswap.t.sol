@@ -30,7 +30,12 @@ contract ExchangeTest is Test {
     function test_construction() public {
         assertEq(token.balanceOf(address(0xCAFE)), 10_000e18, "initial trader balance");
         assertEq(token.balanceOf(address(exchange)), 0, "initial exchange balance");
+
         assertEq(exchange.tokenAddress(), address(token), "token address in exchange");
+
+        assertEq(exchange.name(), "Zuniswap-V1");
+        assertEq(exchange.symbol(), "ZUNI-V1");
+        assertEq(exchange.decimals(), 18);
     }
 
     function testRevert_construction_whenTokenIsZeroAddress() public {
@@ -52,15 +57,20 @@ contract ExchangeTest is Test {
         assertEq(exchange.getReserve(), 0, "exchange reserve before addLiquidity");
         assertEq(address(0xCAFE).balance, 10_000 ether, "trader ether balance before addLiquidity");
         assertEq(address(exchange).balance, 0, "exchange ether balance before addLiquidity");
+        assertEq(exchange.totalSupply(), 0, "exchange LP tokens before addLiquidity");
+        assertEq(exchange.balanceOf(address(0xCAFE)), 0, "LPer LP tokens before addLiquidity");
 
         token.approve(address(exchange), 2000e18);
-        exchange.addLiquidity{value: 1000 ether}(2000e18);
+        uint256 lpTokens = exchange.addLiquidity{value: 1000 ether}(2000e18);
 
         assertEq(token.balanceOf(address(0xCAFE)), 8000e18, "trader token balance after addLiquidity");
         assertEq(token.balanceOf(address(exchange)), 2000e18, "exchange token balance before addLiquidity");
         assertEq(exchange.getReserve(), 2000e18, "exchange reserve after addLiquidity");
         assertEq(address(0xCAFE).balance, 9000 ether, "trader ether balance after addLiquidity");
         assertEq(address(exchange).balance, 1000 ether, "exchange ether balance after addLiquidity");
+        assertEq(lpTokens, 1000e18);
+        assertEq(exchange.totalSupply(), 1000e18, "exchange LP tokens after addLiquidity");
+        assertEq(exchange.balanceOf(address(0xCAFE)), 1000e18, "LPer LP tokens after addLiquidity");
     }
 
     function test_addLiquidity_whenReservesProporitionAlreadyEstablished() public {
@@ -73,18 +83,43 @@ contract ExchangeTest is Test {
         assertEq(address(0xCAFE).balance, 9000 ether, "trader ether balance before addLiquidity");
         assertEq(address(exchange).balance, 1000 ether, "exchange ether balance before addLiquidity");
 
-        exchange.addLiquidity{value: 1000 ether}(3000e18);
+        // add more liquidity
+        uint256 lpTokens = exchange.addLiquidity{value: 1000 ether}(3000e18); // only 2000e18 tokens will be added
 
         assertEq(token.balanceOf(address(0xCAFE)), 6000e18, "trader token balance after addLiquidity");
         assertEq(token.balanceOf(address(exchange)), 4000e18, "exchange token balance after addLiquidity");
         assertEq(exchange.getReserve(), 4000e18, "exchange reserve after addLiquidity");
         assertEq(address(0xCAFE).balance, 8000 ether, "trader ether balance after addLiquidity");
         assertEq(address(exchange).balance, 2000 ether, "exchange ether balance after addLiquidity");
+        assertEq(lpTokens, 1000e18); // LP tokens issued based only on ether amount added
+        assertEq(exchange.totalSupply(), 2000e18, "exchange LP tokens after addLiquidity");
+        assertEq(exchange.balanceOf(address(0xCAFE)), 2000e18, "LPer LP tokens after addLiquidity");
+
+        // add even more liquidity
+        lpTokens = exchange.addLiquidity{value: 500 ether}(1000e18);
+
+        assertEq(token.balanceOf(address(0xCAFE)), 5000e18, "trader token balance after addLiquidity 2");
+        assertEq(token.balanceOf(address(exchange)), 5000e18, "exchange token balance after addLiquidity 2");
+        assertEq(exchange.getReserve(), 5000e18, "exchange reserve after addLiquidity 2");
+        assertEq(address(0xCAFE).balance, 7500 ether, "trader ether balance after addLiquidity 2");
+        assertEq(address(exchange).balance, 2500 ether, "exchange ether balance after addLiquidity 2");
+        assertEq(lpTokens, 500e18);
+        assertEq(exchange.totalSupply(), 2500e18, "exchange LP tokens after addLiquidity 2");
+        assertEq(exchange.balanceOf(address(0xCAFE)), 2500e18, "LPer LP tokens after addLiquidity 2");
     }
 
-    function testRevert_addLiquidity_whenNotSufficientApproval() public {
+    function testRevert_addLiquidity_whenInsufficientApproval() public {
         vm.expectRevert(stdError.arithmeticError);
         exchange.addLiquidity(10e18);
+    }
+
+    function testRevert_addLiquidity_whenInsufficientTokenAmount() public {
+        token.approve(address(exchange), type(uint256).max);
+        exchange.addLiquidity{value: 1000 ether}(2000e18);
+
+        vm.expectRevert(Exchange.InsufficientTokenAmount.selector);
+
+        exchange.addLiquidity{value: 500 ether}(500e18);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -160,7 +195,7 @@ contract ExchangeTest is Test {
     }
 }
 
-contract Exchange {
+contract Exchange is ERC20 {
     //
     error InvalidTokenAddress();
     error InvalidReserves();
@@ -170,17 +205,22 @@ contract Exchange {
 
     address public tokenAddress;
 
-    constructor(address _token) {
+    constructor(address _token) ERC20("Zuniswap-V1", "ZUNI-V1", 18) {
         if (_token == address(0)) {
             revert InvalidTokenAddress();
         }
         tokenAddress = _token;
     }
 
-    function addLiquidity(uint256 _tokenAmount) public payable {
+    function addLiquidity(uint256 _tokenAmount) public payable returns (uint256) {
         if (getReserve() == 0) {
+            uint256 liquidity = address(this).balance;
+            _mint(msg.sender, liquidity);
+
             IERC20 token = IERC20(tokenAddress);
-            token.transferFrom(msg.sender, address(this), _tokenAmount);            
+            token.transferFrom(msg.sender, address(this), _tokenAmount);  
+
+            return liquidity;
         } else {
             uint256 ethReserve = address(this).balance - msg.value;
             uint256 tokenReserve = getReserve();
@@ -189,8 +229,13 @@ contract Exchange {
                 revert InsufficientTokenAmount();
             }
 
+            uint256 liquidity = (totalSupply * msg.value) / ethReserve;
+            _mint(msg.sender, liquidity);
+
             IERC20 token = IERC20(tokenAddress);
             token.transferFrom(msg.sender, address(this), tokenAmount);
+
+            return liquidity;
         }
     }
 
