@@ -135,24 +135,28 @@ contract ExchangeTest is Test {
     }
 
     function test_getTokenAmount() public withLiquidity(2000e18, 1000 ether) {
-        assertEq(exchange.getTokenAmount(1 ether), 1998001998001998001, "tokens per ETH");
+        uint256 expectedTokenAmount = (exchange.getReserve() * 1 ether * 99) / ((address(exchange).balance * 100) + (1 ether * 99));
+        assertEq(exchange.getTokenAmount(1 ether), expectedTokenAmount, "tokens per ETH");
     }
 
     function test_getTokenAmount(uint256 etherAmount) public withLiquidity(2000e18, 1000 ether) {
         etherAmount = bound(etherAmount, 1 ether, 1000 ether);
 
-        uint256 expectedTokenAmount = (exchange.getReserve() * etherAmount) / (address(exchange).balance + etherAmount);
+        // uint256 expectedTokenAmount = (exchange.getReserve() * etherAmount) / (address(exchange).balance + etherAmount);
+        uint256 expectedTokenAmount = (exchange.getReserve() * etherAmount * 99) / ((address(exchange).balance * 100) + (etherAmount * 99));
         assertEq(exchange.getTokenAmount(etherAmount), expectedTokenAmount, "tokens per ETH");
     }
 
     function test_getEthAmount() public withLiquidity(2000e18, 1000 ether) {
-        assertEq(exchange.getEthAmount(2e18), 999000999000999000, "ETH per token");
+        uint256 expectedEthAmount = (address(exchange).balance * 2e18 * 99) / ((exchange.getReserve() * 100) + (2e18 * 99));
+        assertEq(exchange.getEthAmount(2e18), expectedEthAmount, "ETH per token");
     }
 
     function test_getEthAmount(uint256 tokenAmount) withLiquidity(2000e18, 1000 ether) public {
         tokenAmount = bound(tokenAmount, 1e18, 2000e18);
 
-        uint256 expectedEthAmount = (address(exchange).balance * tokenAmount) / (exchange.getReserve() + tokenAmount);
+        // uint256 expectedEthAmount = (address(exchange).balance * tokenAmount) / (exchange.getReserve() + tokenAmount);
+        uint256 expectedEthAmount = (address(exchange).balance * tokenAmount * 99) / ((exchange.getReserve() * 100) + (tokenAmount * 99));
         assertEq(exchange.getEthAmount(tokenAmount), expectedEthAmount, "ETH per token");
     }
 
@@ -165,7 +169,8 @@ contract ExchangeTest is Test {
         uint256 etherReserve = address(exchange).balance;
 
         uint256 minTokenAmount = exchange.getTokenAmount(1 ether);
-        uint256 expectedTokenAmount = (tokenReserve * 1 ether) / (etherReserve + 1 ether);
+        // uint256 expectedTokenAmount = (tokenReserve * 1 ether) / (etherReserve + 1 ether);
+        uint256 expectedTokenAmount = (tokenReserve * 1 ether * 99) / ((etherReserve * 100) + (1 ether * 99));
         assertEq(minTokenAmount, expectedTokenAmount, "tokens per ETH");
 
         exchange.ethToTokenSwap{value: 1 ether}(minTokenAmount);
@@ -182,7 +187,8 @@ contract ExchangeTest is Test {
         uint256 tokenToSwap = 1e18;
 
         uint256 minEtherAmount = exchange.getEthAmount(tokenToSwap);
-        uint256 expectedEtherAmount = (etherReserve * tokenToSwap) / (tokenReserve + tokenToSwap);
+        // uint256 expectedEtherAmount = (etherReserve * tokenToSwap) / (tokenReserve + tokenToSwap);
+        uint256 expectedEtherAmount = (etherReserve * tokenToSwap * 99) / ((tokenReserve * 100) + (tokenToSwap * 99));
         assertEq(minEtherAmount, expectedEtherAmount, "ETH per token");
 
         token.approve(address(exchange), type(uint256).max);
@@ -234,7 +240,6 @@ contract Exchange is ERC20 {
 
             IERC20 token = IERC20(tokenAddress);
             token.transferFrom(msg.sender, address(this), tokenAmount);
-
             return liquidity;
         }
     }
@@ -299,7 +304,12 @@ contract Exchange is ERC20 {
             revert InvalidReserves(); // TODO test
         }
 
-        return (outputReserve * inputAmount) / (inputReserve + inputAmount);
+        uint256 inputAmountWithFee = inputAmount * 99;
+        uint256 numerator = outputReserve * inputAmountWithFee;
+        uint256 denominator = (inputReserve * 100) + inputAmountWithFee;
+
+        return numerator / denominator;
+        // return (outputReserve * inputAmount) / (inputReserve + inputAmount);
     }   
 }
 
