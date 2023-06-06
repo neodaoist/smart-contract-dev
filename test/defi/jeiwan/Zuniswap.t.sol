@@ -199,6 +199,41 @@ contract ExchangeTest is Test {
         assertEq(address(0xCAFE).balance, 10_000 ether - 1_000 ether + expectedEtherAmount, "trader ether balance");
         assertEq(address(exchange).balance, 1_000 ether - expectedEtherAmount, "exchange ether balance");
     }
+
+    /*//////////////////////////////////////////////////////////////
+    //  Removing Liquidity
+    //////////////////////////////////////////////////////////////*/
+
+    function test_removeLiquidity() public withLiquidity(2000e18, 1000 ether) {
+        // preconditions
+        assertEq(exchange.balanceOf(address(0xCAFE)), 1000e18, "LPer LP-token balance before");
+        assertEq(address(exchange).balance, 1000 ether, "exchange ether balance before");
+        assertEq(address(0xCAFE).balance, 9000 ether, "LPer ether balance before");
+        assertEq(token.balanceOf(address(exchange)), 2000e18, "exchange token balance before");
+        assertEq(token.balanceOf(address(0xCAFE)), 8000e18, "LPer token balance before");
+
+        (uint256 ethAmountRemoved, uint256 tokenAmountRemoved) = exchange.removeLiquidity(100e18);
+
+        assertEq(exchange.balanceOf(address(0xCAFE)), 900e18, "LPer LP-token balance after");
+        assertEq(address(exchange).balance, 900 ether, "exchange ether balance after");
+        assertEq(address(0xCAFE).balance, 9100 ether, "LPer ether balance after");
+        assertEq(token.balanceOf(address(exchange)), 1800e18, "exchange token balance after");
+        assertEq(token.balanceOf(address(0xCAFE)), 8200e18, "LPer token balance after");
+    }
+
+    // TODO 
+    function test_removeLiquidity_whenSwapsInBetween() public {
+        // 1. LPer deposits 100 ether and 200 tokens
+        // (therefore 1 token = 0.5 ether and 1 ether = 2 tokens)
+
+        // 2. Trader swaps 10 ether for at least 18 tokens
+        // (includes slippage and 1% fee)
+
+        // 3. LPer removes liquidity
+        // (getting more ether and less tokens than initially deposited,
+        // but all the fees bc they were the only LPer)
+
+    }
 }
 
 contract Exchange is ERC20 {
@@ -208,6 +243,7 @@ contract Exchange is ERC20 {
     error EthSoldTooSmall();
     error TokenSoldTooSmall();
     error InsufficientTokenAmount();
+    error InvalidAmountToRemove();
 
     address public tokenAddress;
 
@@ -242,6 +278,20 @@ contract Exchange is ERC20 {
             token.transferFrom(msg.sender, address(this), tokenAmount);
             return liquidity;
         }
+    }
+
+    function removeLiquidity(uint256 _amount) public returns (uint256 ethAmountRemoved, uint256 tokenAmountRemoved) {
+        if (_amount == 0) {
+            revert InvalidAmountToRemove(); // TODO test 
+        }
+
+        ethAmountRemoved = (address(this).balance * _amount) / totalSupply;
+        tokenAmountRemoved = (getReserve() * _amount) / totalSupply;
+
+        _burn(msg.sender, _amount);
+
+        payable(msg.sender).transfer(ethAmountRemoved);
+        IERC20(tokenAddress).transfer(msg.sender, tokenAmountRemoved);
     }
 
     function getReserve() public view returns (uint256) {
