@@ -8,8 +8,10 @@ import "solmate/tokens/ERC20.sol";
 // inspired by https://jeiwan.net/posts/programming-defi-uniswap-1/
 contract ExchangeTest is Test {
     //
-    Token internal token;
-    Exchange internal exchange;
+    Token private token;
+    Exchange private exchange;
+
+    address private constant LPer = address(0xCAFE);
 
     modifier withLiquidity(uint256 _tokenAmount, uint256 _etherAmount) {
         token.approve(address(exchange), _tokenAmount);
@@ -18,7 +20,7 @@ contract ExchangeTest is Test {
     }
 
     function setUp() public {
-        startHoax(address(0xCAFE), 10_000 ether);
+        startHoax(LPer, 10_000 ether);
         token = new Token("Toke", "TOKE", 10_000e18);
         exchange = new Exchange(address(token));
     }
@@ -28,7 +30,7 @@ contract ExchangeTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function test_construction() public {
-        assertEq(token.balanceOf(address(0xCAFE)), 10_000e18, "initial trader balance");
+        assertEq(token.balanceOf(LPer), 10_000e18, "initial trader balance");
         assertEq(token.balanceOf(address(exchange)), 0, "initial exchange balance");
 
         assertEq(exchange.tokenAddress(), address(token), "token address in exchange");
@@ -52,60 +54,60 @@ contract ExchangeTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function test_addLiquidity_whenInitial() public {
-        assertEq(token.balanceOf(address(0xCAFE)), 10_000e18, "trader token balance before addLiquidity");
+        assertEq(token.balanceOf(LPer), 10_000e18, "trader token balance before addLiquidity");
         assertEq(token.balanceOf(address(exchange)), 0, "exchange token balance before addLiquidity");
         assertEq(exchange.getReserve(), 0, "exchange reserve before addLiquidity");
-        assertEq(address(0xCAFE).balance, 10_000 ether, "trader ether balance before addLiquidity");
+        assertEq(LPer.balance, 10_000 ether, "trader ether balance before addLiquidity");
         assertEq(address(exchange).balance, 0, "exchange ether balance before addLiquidity");
         assertEq(exchange.totalSupply(), 0, "exchange LP tokens before addLiquidity");
-        assertEq(exchange.balanceOf(address(0xCAFE)), 0, "LPer LP tokens before addLiquidity");
+        assertEq(exchange.balanceOf(LPer), 0, "LPer LP tokens before addLiquidity");
 
         token.approve(address(exchange), 2000e18);
         uint256 lpTokens = exchange.addLiquidity{value: 1000 ether}(2000e18);
 
-        assertEq(token.balanceOf(address(0xCAFE)), 8000e18, "trader token balance after addLiquidity");
+        assertEq(token.balanceOf(LPer), 8000e18, "trader token balance after addLiquidity");
         assertEq(token.balanceOf(address(exchange)), 2000e18, "exchange token balance before addLiquidity");
         assertEq(exchange.getReserve(), 2000e18, "exchange reserve after addLiquidity");
-        assertEq(address(0xCAFE).balance, 9000 ether, "trader ether balance after addLiquidity");
+        assertEq(LPer.balance, 9000 ether, "trader ether balance after addLiquidity");
         assertEq(address(exchange).balance, 1000 ether, "exchange ether balance after addLiquidity");
         assertEq(lpTokens, 1000e18);
         assertEq(exchange.totalSupply(), 1000e18, "exchange LP tokens after addLiquidity");
-        assertEq(exchange.balanceOf(address(0xCAFE)), 1000e18, "LPer LP tokens after addLiquidity");
+        assertEq(exchange.balanceOf(LPer), 1000e18, "LPer LP tokens after addLiquidity");
     }
 
     function test_addLiquidity_whenReservesProporitionAlreadyEstablished() public {
         token.approve(address(exchange), type(uint256).max);
         exchange.addLiquidity{value: 1000 ether}(2000e18);
 
-        assertEq(token.balanceOf(address(0xCAFE)), 8000e18, "trader token balance before addLiquidity");
+        assertEq(token.balanceOf(LPer), 8000e18, "trader token balance before addLiquidity");
         assertEq(token.balanceOf(address(exchange)), 2000e18, "exchange token balance before addLiquidity");
         assertEq(exchange.getReserve(), 2000e18, "exchange reserve before addLiquidity");
-        assertEq(address(0xCAFE).balance, 9000 ether, "trader ether balance before addLiquidity");
+        assertEq(LPer.balance, 9000 ether, "trader ether balance before addLiquidity");
         assertEq(address(exchange).balance, 1000 ether, "exchange ether balance before addLiquidity");
 
         // add more liquidity
         uint256 lpTokens = exchange.addLiquidity{value: 1000 ether}(3000e18); // only 2000e18 tokens will be added
 
-        assertEq(token.balanceOf(address(0xCAFE)), 6000e18, "trader token balance after addLiquidity");
+        assertEq(token.balanceOf(LPer), 6000e18, "trader token balance after addLiquidity");
         assertEq(token.balanceOf(address(exchange)), 4000e18, "exchange token balance after addLiquidity");
         assertEq(exchange.getReserve(), 4000e18, "exchange reserve after addLiquidity");
-        assertEq(address(0xCAFE).balance, 8000 ether, "trader ether balance after addLiquidity");
+        assertEq(LPer.balance, 8000 ether, "trader ether balance after addLiquidity");
         assertEq(address(exchange).balance, 2000 ether, "exchange ether balance after addLiquidity");
         assertEq(lpTokens, 1000e18); // LP tokens issued based only on ether amount added
         assertEq(exchange.totalSupply(), 2000e18, "exchange LP tokens after addLiquidity");
-        assertEq(exchange.balanceOf(address(0xCAFE)), 2000e18, "LPer LP tokens after addLiquidity");
+        assertEq(exchange.balanceOf(LPer), 2000e18, "LPer LP tokens after addLiquidity");
 
         // add even more liquidity
         lpTokens = exchange.addLiquidity{value: 500 ether}(1000e18);
 
-        assertEq(token.balanceOf(address(0xCAFE)), 5000e18, "trader token balance after addLiquidity 2");
+        assertEq(token.balanceOf(LPer), 5000e18, "trader token balance after addLiquidity 2");
         assertEq(token.balanceOf(address(exchange)), 5000e18, "exchange token balance after addLiquidity 2");
         assertEq(exchange.getReserve(), 5000e18, "exchange reserve after addLiquidity 2");
-        assertEq(address(0xCAFE).balance, 7500 ether, "trader ether balance after addLiquidity 2");
+        assertEq(LPer.balance, 7500 ether, "trader ether balance after addLiquidity 2");
         assertEq(address(exchange).balance, 2500 ether, "exchange ether balance after addLiquidity 2");
         assertEq(lpTokens, 500e18);
         assertEq(exchange.totalSupply(), 2500e18, "exchange LP tokens after addLiquidity 2");
-        assertEq(exchange.balanceOf(address(0xCAFE)), 2500e18, "LPer LP tokens after addLiquidity 2");
+        assertEq(exchange.balanceOf(LPer), 2500e18, "LPer LP tokens after addLiquidity 2");
     }
 
     function testRevert_addLiquidity_whenInsufficientApproval() public {
@@ -175,9 +177,9 @@ contract ExchangeTest is Test {
 
         exchange.ethToTokenSwap{value: 1 ether}(minTokenAmount);
 
-        assertEq(token.balanceOf(address(0xCAFE)), 10_000e18 - 2_000e18 + expectedTokenAmount, "trader token balance");
+        assertEq(token.balanceOf(LPer), 10_000e18 - 2_000e18 + expectedTokenAmount, "trader token balance");
         assertEq(exchange.getReserve(), 2_000e18 - expectedTokenAmount, "exchange reserve");
-        assertEq(address(0xCAFE).balance, 10_000 ether - 1_000 ether - 1 ether, "trader ether balance");
+        assertEq(LPer.balance, 10_000 ether - 1_000 ether - 1 ether, "trader ether balance");
         assertEq(address(exchange).balance, 1_000 ether + 1 ether, "exchange ether balance");
     }
 
@@ -194,9 +196,9 @@ contract ExchangeTest is Test {
         token.approve(address(exchange), type(uint256).max);
         exchange.tokenToEthSwap(tokenToSwap, minEtherAmount);
 
-        assertEq(token.balanceOf(address(0xCAFE)), 10_000e18 - 2_000e18 - tokenToSwap, "trader token balance");
+        assertEq(token.balanceOf(LPer), 10_000e18 - 2_000e18 - tokenToSwap, "trader token balance");
         assertEq(exchange.getReserve(), 2_000e18 + tokenToSwap, "exchange reserve");
-        assertEq(address(0xCAFE).balance, 10_000 ether - 1_000 ether + expectedEtherAmount, "trader ether balance");
+        assertEq(LPer.balance, 10_000 ether - 1_000 ether + expectedEtherAmount, "trader ether balance");
         assertEq(address(exchange).balance, 1_000 ether - expectedEtherAmount, "exchange ether balance");
     }
 
@@ -206,34 +208,70 @@ contract ExchangeTest is Test {
 
     function test_removeLiquidity() public withLiquidity(2000e18, 1000 ether) {
         // preconditions
-        assertEq(exchange.balanceOf(address(0xCAFE)), 1000e18, "LPer LP-token balance before");
+        assertEq(exchange.totalSupply(), 1000e18, "LP-token total supply after add liquidity");
+        assertEq(exchange.balanceOf(LPer), 1000e18, "LPer LP-token balance before");
         assertEq(address(exchange).balance, 1000 ether, "exchange ether balance before");
-        assertEq(address(0xCAFE).balance, 9000 ether, "LPer ether balance before");
+        assertEq(LPer.balance, 9000 ether, "LPer ether balance before");
         assertEq(token.balanceOf(address(exchange)), 2000e18, "exchange token balance before");
-        assertEq(token.balanceOf(address(0xCAFE)), 8000e18, "LPer token balance before");
+        assertEq(token.balanceOf(LPer), 8000e18, "LPer token balance before");
 
         (uint256 ethAmountRemoved, uint256 tokenAmountRemoved) = exchange.removeLiquidity(100e18);
 
-        assertEq(exchange.balanceOf(address(0xCAFE)), 900e18, "LPer LP-token balance after");
+        assertEq(ethAmountRemoved, 100 ether);
+        assertEq(tokenAmountRemoved, 200e18);
+
+        assertEq(exchange.totalSupply(), 900e18, "LP-token total supply after add liquidity");
+        assertEq(exchange.balanceOf(LPer), 900e18, "LPer LP-token balance after");
         assertEq(address(exchange).balance, 900 ether, "exchange ether balance after");
-        assertEq(address(0xCAFE).balance, 9100 ether, "LPer ether balance after");
+        assertEq(LPer.balance, 9100 ether, "LPer ether balance after");
         assertEq(token.balanceOf(address(exchange)), 1800e18, "exchange token balance after");
-        assertEq(token.balanceOf(address(0xCAFE)), 8200e18, "LPer token balance after");
+        assertEq(token.balanceOf(LPer), 8200e18, "LPer token balance after");
     }
 
-    // TODO 
-    function test_removeLiquidity_whenSwapsInBetween() public {
+    function test_removeLiquidity_whenSwapInBetween() public {
         // 1. LPer deposits 100 ether and 200 tokens
         // (therefore 1 token = 0.5 ether and 1 ether = 2 tokens)
+        token.approve(address(exchange), type(uint256).max);
+        exchange.addLiquidity{value: 100 ether}(200e18);
+
+        assertEq(exchange.totalSupply(), 100e18, "LP-token total supply after add liquidity");
+        assertEq(exchange.balanceOf(LPer), 100e18, "LPer LP-token balance after add liquidity");
+        assertEq(address(exchange).balance, 100 ether, "exchange ether balance after add liquidity");
+        assertEq(LPer.balance, 9900 ether, "LPer ether balance after add liquidity");
+        assertEq(token.balanceOf(address(exchange)), 200e18, "exchange token balance after add liquidity");
+        assertEq(token.balanceOf(LPer), 9800e18, "LPer token balance after add liquidity");
 
         // 2. Trader swaps 10 ether for at least 18 tokens
         // (includes slippage and 1% fee)
+        vm.stopPrank();
+        address trader = address(0xBABE);
+        startHoax(trader, 100 ether);
+        // deal(address(token), trader, 1_000_000e18);
+
+        exchange.ethToTokenSwap{value: 10 ether}(18e18);
+
+        assertEq(trader.balance, 90 ether, "trader ether balance after swap");
+        assertGe(token.balanceOf(trader), 18e18, "trader token balance after swap");
+        assertEq(address(exchange).balance, 110 ether, "exchange ether balance after swap");
+        assertLe(token.balanceOf(address(exchange)), 200e18 - 18e18, "exchange token balance after swap");
+        emit log_named_uint("trader token balance after swap", token.balanceOf(trader));
 
         // 3. LPer removes liquidity
         // (getting more ether and less tokens than initially deposited,
         // but all the fees bc they were the only LPer)
+        vm.stopPrank();
+        vm.startPrank(LPer);
+        (uint256 ethAmountRemoved, uint256 tokenAmountRemoved) = exchange.removeLiquidity(100e18);
 
+        assertEq(exchange.totalSupply(), 0, "LP-token total supply after remove liquidity");
+        assertEq(exchange.balanceOf(LPer), 0, "LPer LP-token balance after remove liquidity");
+        assertEq(address(exchange).balance, 0, "exchange ether balance after remove liquidity");
+        assertEq(LPer.balance, 10_010 ether, "LPer ether balance after remove liquidity");
+        assertEq(token.balanceOf(address(exchange)), 0, "exchange token balance after remove liquidity");
+        assertLe(token.balanceOf(LPer), 10_000e18 - 18e18, "LPer token balance after remove liquidity");
     }
+
+    // TODO add test scenario with multiple LPers and multiple swaps
 }
 
 contract Exchange is ERC20 {
