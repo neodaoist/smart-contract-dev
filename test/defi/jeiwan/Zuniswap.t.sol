@@ -6,6 +6,7 @@ import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import "solmate/tokens/ERC20.sol";
 
 // inspired by https://jeiwan.net/posts/programming-defi-uniswap-1/
+// https://github.com/Jeiwan/zuniswap/tree/part_3/test
 contract ExchangeTest is Test {
     //
     Token private token;
@@ -34,6 +35,7 @@ contract ExchangeTest is Test {
         assertEq(token.balanceOf(address(exchange)), 0, "initial exchange balance");
 
         assertEq(exchange.tokenAddress(), address(token), "token address in exchange");
+        assertEq(exchange.factoryAddress(), LPer, "factory address in exchange"); // will be Factory when deployed via Factory
 
         assertEq(exchange.name(), "Zuniswap-V1");
         assertEq(exchange.symbol(), "ZUNI-V1");
@@ -254,7 +256,7 @@ contract ExchangeTest is Test {
         assertGe(token.balanceOf(trader), 18e18, "trader token balance after swap");
         assertEq(address(exchange).balance, 110 ether, "exchange ether balance after swap");
         assertLe(token.balanceOf(address(exchange)), 200e18 - 18e18, "exchange token balance after swap");
-        emit log_named_uint("trader token balance after swap", token.balanceOf(trader));
+        // emit log_named_uint("trader token balance after swap", token.balanceOf(trader));
 
         // 3. LPer removes liquidity
         // (getting more ether and less tokens than initially deposited,
@@ -262,6 +264,9 @@ contract ExchangeTest is Test {
         vm.stopPrank();
         vm.startPrank(LPer);
         (uint256 ethAmountRemoved, uint256 tokenAmountRemoved) = exchange.removeLiquidity(100e18);
+
+        assertEq(ethAmountRemoved, 110 ether, "ether amount removed");
+        assertApproxEqRel(tokenAmountRemoved, 200e18 - 18e18, 0.0001e18, "token amount removed");
 
         assertEq(exchange.totalSupply(), 0, "LP-token total supply after remove liquidity");
         assertEq(exchange.balanceOf(LPer), 0, "LPer LP-token balance after remove liquidity");
@@ -272,6 +277,8 @@ contract ExchangeTest is Test {
     }
 
     // TODO add test scenario with multiple LPers and multiple swaps
+
+    // TODO add token-to-token swaps
 }
 
 contract Exchange is ERC20 {
@@ -284,12 +291,14 @@ contract Exchange is ERC20 {
     error InvalidAmountToRemove();
 
     address public tokenAddress;
+    address public factoryAddress;
 
     constructor(address _token) ERC20("Zuniswap-V1", "ZUNI-V1", 18) {
         if (_token == address(0)) {
             revert InvalidTokenAddress();
         }
         tokenAddress = _token;
+        factoryAddress = msg.sender;
     }
 
     function addLiquidity(uint256 _tokenAmount) public payable returns (uint256) {
@@ -400,6 +409,82 @@ contract Exchange is ERC20 {
         // return (outputReserve * inputAmount) / (inputReserve + inputAmount);
     }   
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+contract FactoryTest is Test {
+    //
+    Token private token;
+    Factory private factory;
+
+    address private constant deployer = address(0xCAFE);
+
+    function setUp() public {
+        startHoax(deployer, 10_000 ether);
+        token = new Token("Toke", "TOKE", 10_000e18);
+        factory = new Factory();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+    //  Create Exchange
+    //////////////////////////////////////////////////////////////*/
+
+    function test_createExchange() public {
+        address tokenExchange = factory.createExchange(address(token));
+        assertFalse(tokenExchange == address(0), "exchange address not zero");
+        assertEq(Exchange(tokenExchange).factoryAddress(), address(factory), "factory address set in exchange");
+    }
+
+    function testRevert_createExchange_whenTokenAddressIsZero() public {
+        vm.expectRevert(Factory.InvalidTokenAddress.selector);
+        factory.createExchange(address(0));
+    }
+
+    function testRevert_createExchange_whenAlreadyCreatedForTokenAddress() public {
+        factory.createExchange(address(token));
+        vm.expectRevert(Factory.ExchangeAlreadyCreatedForToken.selector);
+        factory.createExchange(address(token));
+    }
+
+    /*//////////////////////////////////////////////////////////////
+    //  Get Exchange
+    //////////////////////////////////////////////////////////////*/
+
+    function test_getExchange() public {
+        address exchange = factory.createExchange(address(token));
+        assertEq(factory.getExchange(address(token)), exchange);
+
+        assertEq(factory.getExchange(address(0xDEAD)), address(0));
+    }
+}
+
+contract Factory {
+    //
+    error InvalidTokenAddress();
+    error ExchangeAlreadyCreatedForToken();
+
+    mapping(address => address) public tokenToExchange;
+
+    function createExchange(address _tokenAddress) public returns (address) {
+        if (_tokenAddress == address(0)) {
+            revert InvalidTokenAddress();
+        }
+        if (tokenToExchange[_tokenAddress] != address(0)) {
+            revert ExchangeAlreadyCreatedForToken();
+        }
+
+        Exchange exchange = new Exchange(_tokenAddress);
+        tokenToExchange[_tokenAddress] = address(exchange);
+
+        return address(exchange);
+    }
+
+    function getExchange(address _tokenAddress) public view returns (address) {
+        return tokenToExchange[_tokenAddress];
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 
 contract Token is ERC20 {
     //
